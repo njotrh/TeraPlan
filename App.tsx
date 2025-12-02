@@ -734,14 +734,14 @@ const CalendarPage: React.FC<{
         </div>
       </div>
 
-      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-30 fixed lg:static bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[35vh]'} lg:h-full`}>
+      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-[60] fixed lg:static bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[85px]'} lg:h-full`}>
          <div 
             className="p-2 flex justify-center lg:hidden cursor-pointer active:bg-gray-50 dark:active:bg-slate-800 rounded-t-[2rem]"
             onClick={() => setIsPanelExpanded(!isPanelExpanded)}
          >
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
          </div>
-         <div className="px-6 pb-4 pt-2 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+         <div className="px-6 pb-4 pt-2 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
              <div>
                  <h3 className="font-bold text-gray-900 dark:text-white text-lg">{selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}</h3>
                  <p className="text-sm text-gray-500">{selectedDateSessions.length} Randevu</p>
@@ -763,7 +763,7 @@ const CalendarPage: React.FC<{
                  }} icon={<Plus size={16} />}>Ekle</Button>
              </div>
          </div>
-         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar pb-20 lg:pb-4">
+         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar pb-20 lg:pb-4 bg-white dark:bg-slate-900">
              {selectedDateSessions.length === 0 ? (
                  <div className="text-center py-10 text-gray-400">
                      <Calendar size={48} className="mx-auto mb-2 opacity-20" />
@@ -1603,24 +1603,30 @@ const AccountingPage: React.FC<{
 
       <Card className="w-full">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="overflow-x-auto pb-2 -mx-6 px-6">
-          <div className="space-y-4 min-w-[600px]">
+        <div className="pb-2">
+          <div className="space-y-4">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
                  const t = item as Transaction;
                  const client = clients.find(c => c.id === t.clientId);
                  return (
-                    <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div key={t.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
-                      <div className="flex items-center gap-4"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                          <div className="text-right ml-auto sm:ml-0"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div>
+                          <button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button>
+                      </div>
                     </div>
                  );
               } else {
                  const e = item as Expense;
                  return (
-                    <div key={e.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                    <div key={e.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
                       <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
-                      <div className="flex items-center gap-4"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                          <div className="text-right ml-auto sm:ml-0"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div>
+                          <button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button>
+                      </div>
                     </div>
                  );
               }
