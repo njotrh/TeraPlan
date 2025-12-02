@@ -183,20 +183,24 @@ export const THEMES: ThemeConfig[] = [
   }
 ];
 
-export const DEFAULT_NOTE_TEMPLATES = [
+export const DEFAULT_NOTE_TEMPLATES: NoteTemplate[] = [
   {
+    id: 'soap',
     label: 'SOAP Formatı',
     content: "S (Subjective - Öznel): \n\nO (Objective - Nesnel): \n\nA (Assessment - Değerlendirme): \n\nP (Plan - Plan): \n"
   },
   {
+    id: 'bdt',
     label: 'BDT Formatı',
     content: "Gündem: \n\nOtomatik Düşünceler: \n\nBilişsel Çarpıtmalar: \n\nYeniden Çerçeveleme: \n\nEv Ödevi: \n"
   },
   {
+    id: 'mse',
     label: 'Ruhsal Durum (MSE)',
     content: "Görünüm ve Davranış: \n\nKonuşma ve İlişki Kurma: \n\nDuygudurum ve Duygulanım: \n\nAlgı ve Düşünce İçeriği: \n\nBilişsel Yetiler: \n"
   },
   {
+    id: 'child_obs',
     label: 'Çocuk Gözlem',
     content: "Oyun Temaları: \n\nEbeveyn Etkileşimi: \n\nDuygu Düzenleme: \n\nDikkat ve Dürtüsellik: \n"
   }
