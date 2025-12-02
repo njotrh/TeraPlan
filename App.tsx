@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Settings, LogOut, Plus, Search, 
@@ -253,14 +254,14 @@ const BarChartComponent: React.FC<{data: number[], labels: string[], colorClass:
     const max = Math.max(...data, 1);
     return (
         <div className="w-full">
-            <div className={`flex items-end gap-2 ${height}`}>
+            <div className={`flex items-end gap-2 ${height} border-b border-gray-200 dark:border-slate-800 pb-1`}>
                 {data.map((val, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
                         <div 
                             className={`w-full rounded-t-lg transition-all ${colorClass} opacity-80 group-hover:opacity-100`}
-                            style={{height: `${(val / max) * 100}%`}}
+                            style={{height: `${Math.max((val / max) * 100, 2)}%`}}
                         ></div>
-                        <span className={`text-[10px] ${labelColor} dark:text-gray-500 absolute -top-4 opacity-0 group-hover:opacity-100 transition-opacity`}>{val}</span>
+                        <span className={`text-[10px] ${labelColor} dark:text-gray-500 absolute -top-5 opacity-100 font-medium`}>{val}</span>
                     </div>
                 ))}
             </div>
@@ -681,7 +682,7 @@ const CalendarPage: React.FC<{
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
        <div className="flex-1 flex flex-col gap-4 overflow-y-auto pb-4">
-           <div className="flex items-center justify-between sticky top-0 bg-gray-50 dark:bg-slate-950 z-10 py-2">
+           <div className="flex items-center justify-between sticky top-0 bg-gray-50 dark:bg-slate-950 z-30 py-2 shadow-sm">
               <div className="flex items-center gap-4">
                 <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full">
                    <ChevronLeft size={24} className="text-gray-600 dark:text-gray-300" />
@@ -695,7 +696,7 @@ const CalendarPage: React.FC<{
 
            <div className="grid grid-cols-7 gap-3 auto-rows-fr">
              {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(d => (
-                <div key={d} className="text-center font-medium text-gray-500 dark:text-gray-400 py-2 sticky top-12 bg-gray-50 dark:bg-slate-950">{d}</div>
+                <div key={d} className="text-center font-medium text-gray-500 dark:text-gray-400 py-2 sticky top-12 bg-gray-50 dark:bg-slate-950 z-20 shadow-sm">{d}</div>
              ))}
              {days.map(day => {
                 const daySessions = sessions.filter(s => isSameDay(new Date(s.date), day));
@@ -728,13 +729,13 @@ const CalendarPage: React.FC<{
            </div>
        </div>
 
-       <Card className="w-full lg:w-96 shrink-0 flex flex-col gap-0 p-0 overflow-hidden h-fit lg:max-h-full">
+       <Card className="w-full lg:w-96 shrink-0 flex flex-col gap-0 p-0 overflow-hidden h-auto max-h-[50vh] lg:max-h-[calc(100vh-20rem)]">
            <div className={`p-6 ${themeConfig.secondaryClass} bg-opacity-30`}>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">{formatDate(selectedDate.getTime()).split(' ').slice(0, -1).join(' ')}</h3>
                 <p className="text-gray-500 dark:text-gray-400">{formatDate(selectedDate.getTime()).split(' ').slice(-1)}</p>
            </div>
            
-           <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[500px] lg:max-h-[calc(100vh-20rem)] custom-scrollbar">
+           <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                 <div className="flex items-center justify-between">
                     <h4 className="font-bold text-gray-900 dark:text-white">Randevular</h4>
                     <span className="text-sm text-gray-500">{selectedDaySessions.length} Adet</span>
