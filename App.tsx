@@ -20,7 +20,7 @@ import autoTable from 'jspdf-autotable';
 import { 
   User, Client, Session, Group, THEMES, ThemeConfig, Transaction, Expense, Document, NoteTemplate, Anamnesis,
   generateId, formatDate, getMonthDays, isSameDay, getWhatsAppLink, getPaymentReminderLink,
-  getImportantEvent, formatCurrency
+  getImportantEvent, formatCurrency, DEFAULT_NOTE_TEMPLATES
 } from './types';
 import { Button, Card, Input, Modal, SearchableSelect } from './components/UI';
 
@@ -228,7 +228,7 @@ const Layout: React.FC<{
         ))}
       </div>
 
-      <main className="flex-1 md:ml-72 p-4 md:p-8 bg-gray-50 dark:bg-slate-950 min-h-screen pb-24 md:pb-8 overflow-hidden">
+      <main className="flex-1 md:ml-72 p-4 md:p-8 bg-gray-50 dark:bg-slate-950 min-h-screen pb-24 md:pb-8">
         {children}
       </main>
     </div>
@@ -242,12 +242,12 @@ const BarChartComponent: React.FC<{data: number[], labels: string[], colorClass:
         <div className={`w-full ${height} flex items-end gap-2`}>
             {data.map((val, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 group">
-                    <span className={`text-[10px] font-bold ${textColor} opacity-100 mb-0.5`}>{val}</span>
-                    <div 
-                        className={`w-full rounded-t-sm transition-all ${colorClass} opacity-80 group-hover:opacity-100`}
-                        style={{height: `${Math.max((val / max) * 100, 2)}%`}}
-                    ></div>
-                    <span className={`text-[10px] font-medium ${textColor} opacity-90 text-center w-full truncate`}>{labels[i]}</span>
+                     <div className={`text-[10px] font-bold ${textColor} mb-0.5`}>{val}</div>
+                     <div 
+                         className={`w-full rounded-t-sm transition-all ${colorClass} opacity-80 group-hover:opacity-100 border-b border-white/20`}
+                         style={{height: `${Math.max((val / max) * 100, 2)}%`}}
+                     ></div>
+                     <span className={`text-[10px] font-medium ${textColor} opacity-90 text-center w-full truncate mt-1`}>{labels[i]}</span>
                 </div>
             ))}
         </div>
@@ -304,7 +304,7 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
         const tableData = [
             ...transactions.map(t => [
                 normalizeForPDF(formatDate(t.date)),
-                normalizeForPDF(t.type === 'payment' ? 'Ödeme' : 'Borç'),
+                normalizeForPDF(t.type === 'payment' ? 'Odeme' : 'Borc'),
                 normalizeForPDF(clients.find(c => c.id === t.clientId)?.name || 'Bilinmeyen'),
                 normalizeForPDF(t.description),
                 t.type === 'payment' ? `+${formatCurrency(t.amount)}` : `-${formatCurrency(t.amount)}`
@@ -1166,7 +1166,10 @@ const ClientProfilePageImpl: React.FC<{
     user: User;
     anamnesisList: Anamnesis[];
     saveAnamnesis: (a: Anamnesis) => void;
-}> = ({ clients, sessions, groups, transactions, updateClient, themeConfig, isAccountingEnabled, addSession, user, anamnesisList, saveAnamnesis }) => {
+    documents: Document[];
+    uploadDocument: (file: File, clientId: string) => Promise<void>;
+    deleteDocument: (id: string, path: string) => Promise<void>;
+}> = ({ clients, sessions, groups, transactions, updateClient, themeConfig, isAccountingEnabled, addSession, user, anamnesisList, saveAnamnesis, documents, uploadDocument, deleteDocument }) => {
     const { id } = useParams<{id: string}>();
     const client = clients.find(c => c.id === id);
     const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'anamnesis' | 'files'>('overview');
@@ -1176,6 +1179,8 @@ const ClientProfilePageImpl: React.FC<{
         educationHistory: '', socialHistory: '', traumaHistory: '',
         updatedAt: Date.now()
     });
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -1193,10 +1198,24 @@ const ClientProfilePageImpl: React.FC<{
         completed: clientSessions.filter(s => s.status === 'completed').length,
         cancelled: clientSessions.filter(s => s.status === 'cancelled').length
     };
+    const clientDocuments = documents.filter(d => d.clientId === client.id).sort((a,b) => b.createdAt - a.createdAt);
 
     const handleSaveAnamnesis = () => {
         saveAnamnesis({...localAnamnesis, updatedAt: Date.now()});
         alert('Anamnez kaydedildi.');
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        setIsUploading(true);
+        try {
+            await uploadDocument(e.target.files[0], client.id);
+        } catch (error: any) {
+            alert('Dosya yüklenemedi: ' + error.message);
+        } finally {
+            setIsUploading(false);
+            if(fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     return (
@@ -1317,9 +1336,47 @@ const ClientProfilePageImpl: React.FC<{
                      )}
                      
                      {activeTab === 'files' && (
-                         <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl">
-                             <Paperclip className="mx-auto text-gray-400 mb-2" size={32} />
-                             <p className="text-gray-500 text-sm">Dosya yükleme alanı (Yakında)</p>
+                         <div className="space-y-4">
+                             <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
+                                 <div>
+                                     <h4 className="font-bold text-blue-800 dark:text-blue-300">Dosya Yükle</h4>
+                                     <p className="text-xs text-blue-600 dark:text-blue-400">PDF, Görsel vb. (Max 10MB)</p>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                                     <Button size="sm" onClick={() => fileInputRef.current?.click()} icon={isUploading ? <Loader2 className="animate-spin" size={16}/> : <Upload size={16}/>} disabled={isUploading}>
+                                         {isUploading ? 'Yükleniyor...' : 'Seç ve Yükle'}
+                                     </Button>
+                                 </div>
+                             </div>
+
+                             <div className="space-y-2">
+                                 {clientDocuments.length === 0 ? (
+                                     <div className="text-center py-10 text-gray-400">Dosya bulunamadı.</div>
+                                 ) : (
+                                     clientDocuments.map(doc => (
+                                         <div key={doc.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 hover:border-blue-200 transition-colors">
+                                             <div className="flex items-center gap-3 overflow-hidden">
+                                                 <div className="p-2 bg-gray-100 dark:bg-slate-800 rounded-lg text-gray-500">
+                                                     {doc.type.includes('image') ? <Camera size={20} /> : <FileText size={20} />}
+                                                 </div>
+                                                 <div className="truncate">
+                                                     <p className="font-medium text-gray-900 dark:text-white truncate">{doc.name}</p>
+                                                     <p className="text-xs text-gray-500">{formatDate(doc.createdAt)} • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                 </div>
+                                             </div>
+                                             <div className="flex items-center gap-1">
+                                                 <a href={doc.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="İndir/Görüntüle">
+                                                     <Download size={18} />
+                                                 </a>
+                                                 <button onClick={() => deleteDocument(doc.id, doc.name)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Sil">
+                                                     <Trash2 size={18} />
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     ))
+                                 )}
+                             </div>
                          </div>
                      )}
                  </div>
@@ -1328,6 +1385,7 @@ const ClientProfilePageImpl: React.FC<{
     );
 };
 
+// ... SettingsPageImpl remains same ...
 const SettingsPageImpl: React.FC<{
     user: User; themeConfig: ThemeConfig; setThemeConfig: (t: ThemeConfig) => void;
     colorMode: 'light' | 'dark' | 'system'; setColorMode: (m: 'light' | 'dark' | 'system') => void;
@@ -1591,47 +1649,39 @@ const AccountingPage: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 overflow-hidden">
               <div className="flex items-center gap-2 mb-6">
                   <BarChart className="text-blue-600" size={24} />
                   <h3 className="font-bold text-gray-900 dark:text-white">Aylık Gelir Grafiği (Son 6 Ay)</h3>
               </div>
-              <BarChartComponent data={incomeData} labels={incomeLabels} colorClass="bg-blue-500" height="h-48" textColor="text-gray-500 dark:text-gray-400" />
+              <BarChartComponent data={incomeData} labels={incomeLabels} colorClass="bg-blue-600 dark:bg-blue-500" height="h-64" textColor="text-gray-500 dark:text-gray-400" />
           </Card>
           <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Danışanlardan Bekleyen Toplam Bakiye</p><p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(totalOutstanding)}</p></div></Card>
       </div>
 
-      <Card className="w-full">
+      <Card>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="pb-2">
-          <div className="space-y-4">
+        <div className="space-y-4 overflow-x-auto">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
                  const t = item as Transaction;
                  const client = clients.find(c => c.id === t.clientId);
                  return (
-                    <div key={t.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div key={t.id} className="min-w-[500px] flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                          <div className="text-right ml-auto sm:ml-0"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div>
-                          <button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button>
-                      </div>
+                      <div className="flex items-center gap-4"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
                     </div>
                  );
               } else {
                  const e = item as Expense;
                  return (
-                    <div key={e.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                    <div key={e.id} className="min-w-[500px] flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
                       <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                          <div className="text-right ml-auto sm:ml-0"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div>
-                          <button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button>
-                      </div>
+                      <div className="flex items-center gap-4"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
                     </div>
                  );
               }
             })}
-          </div>
         </div>
       </Card>
       <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Ödeme Al">
@@ -1666,6 +1716,7 @@ const App: React.FC = () => {
   const [colorMode, setColorMode] = useState<'light' | 'dark' | 'system'>('system');
   const [isAccountingEnabled, setIsAccountingEnabled] = useState(true);
   const [anamnesisList, setAnamnesisList] = useState<Anamnesis[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
 
   const [supabase] = useState(() => createClient(
       process.env.REACT_APP_SUPABASE_URL || 'https://wesyhmkxxgybqndavjcy.supabase.co', 
@@ -1682,7 +1733,7 @@ const App: React.FC = () => {
   const fetchData = async () => {
       if (!user) return;
       try {
-          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes, anamnesisRes, templatesRes] = await Promise.all([
+          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes, anamnesisRes, templatesRes, documentsRes] = await Promise.all([
               supabase.from('clients').select('*'),
               supabase.from('groups').select('*'),
               supabase.from('sessions').select('*'),
@@ -1690,7 +1741,8 @@ const App: React.FC = () => {
               supabase.from('expenses').select('*'),
               supabase.from('user_settings').select('*').single(),
               supabase.from('anamnesis').select('*'),
-              supabase.from('note_templates').select('*')
+              supabase.from('note_templates').select('*'),
+              supabase.from('documents').select('*')
           ]);
 
           if (clientsRes.data) {
@@ -1733,9 +1785,14 @@ const App: React.FC = () => {
                   updatedAt: a.updated_at
               })));
           }
-          if (templatesRes.data && templatesRes.data.length > 0) {
+          if (templatesRes.data) {
               setTemplates(templatesRes.data.map((t: any) => ({
                   id: t.id, label: t.label, content: t.content
+              })));
+          }
+          if (documentsRes.data) {
+              setDocuments(documentsRes.data.map((d: any) => ({
+                  id: d.id, clientId: d.client_id, name: d.name, url: d.url, type: d.type, size: d.size, createdAt: d.created_at
               })));
           }
           if (settingsRes.data) {
@@ -1943,6 +2000,30 @@ const App: React.FC = () => {
       } catch (e: any) { alert("Yükleme hatası: " + e.message); }
   };
 
+  const uploadDocument = async (file: File, clientId: string) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${clientId}/${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage.from('documents').getPublicUrl(fileName);
+      const newDoc: Document = {
+          id: generateId(), clientId, name: file.name, url: data.publicUrl, type: file.type, size: file.size, createdAt: Date.now()
+      };
+      
+      setDocuments(prev => [...prev, newDoc]);
+      await supabase.from('documents').insert({
+          id: newDoc.id, user_id: (await supabase.auth.getUser()).data.user?.id, client_id: clientId,
+          name: newDoc.name, url: newDoc.url, type: newDoc.type, size: newDoc.size, created_at: newDoc.createdAt
+      });
+  };
+
+  const deleteDocument = async (id: string, name: string) => {
+      if(!window.confirm(`${name} dosyasını silmek istediğinize emin misiniz?`)) return;
+      setDocuments(prev => prev.filter(d => d.id !== id));
+      await supabase.from('documents').delete().eq('id', id);
+  };
+
   const updatePassword = async (password: string) => {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) alert("Hata: " + error.message);
@@ -2011,6 +2092,7 @@ const App: React.FC = () => {
                   clients={clients} sessions={sessions} groups={groups} transactions={transactions} 
                   updateClient={updateClient} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} 
                   addSession={addSession} user={user} anamnesisList={anamnesisList} saveAnamnesis={saveAnamnesis}
+                  documents={documents} uploadDocument={uploadDocument} deleteDocument={deleteDocument}
               />
           } />
           <Route path="/groups" element={
