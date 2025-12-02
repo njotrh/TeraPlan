@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Settings, LogOut, Plus, Search, 
@@ -11,7 +12,7 @@ import {
   Save, FileJson, Database, Link as LinkIcon, Loader2,
   MoreVertical, X, Edit, Archive, CheckSquare, LayoutList,
   Laptop, Paperclip, BarChart, File, Repeat, Printer, StickyNote,
-  Eye, EyeOff
+  Eye, EyeOff, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
@@ -246,7 +247,7 @@ const BarChartComponent: React.FC<{data: number[], labels: string[], colorClass:
                         className={`w-full rounded-t-sm transition-all ${colorClass} opacity-80 group-hover:opacity-100`}
                         style={{height: `${Math.max((val / max) * 100, 2)}%`}}
                     ></div>
-                    <span className={`text-[10px] font-medium ${textColor} opacity-90`}>{labels[i]}</span>
+                    <span className={`text-[10px] font-medium ${textColor} opacity-90 text-center w-full truncate`}>{labels[i]}</span>
                 </div>
             ))}
         </div>
@@ -297,20 +298,19 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
         
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        // Normalize date to fix 'Aral1k' issue
         doc.text(normalizeForPDF(`Tarih: ${formatDate(Date.now())}`), 14, 28);
         doc.text("TeraPlan Otomatik Rapor", 14, 34);
 
         const tableData = [
             ...transactions.map(t => [
-                normalizeForPDF(formatDate(t.date)), // Fix date in table
+                normalizeForPDF(formatDate(t.date)),
                 normalizeForPDF(t.type === 'payment' ? 'Ödeme' : 'Borç'),
                 normalizeForPDF(clients.find(c => c.id === t.clientId)?.name || 'Bilinmeyen'),
                 normalizeForPDF(t.description),
                 t.type === 'payment' ? `+${formatCurrency(t.amount)}` : `-${formatCurrency(t.amount)}`
             ]),
             ...expenses.map(e => [
-                normalizeForPDF(formatDate(e.date)), // Fix date in table
+                normalizeForPDF(formatDate(e.date)),
                 'Gider',
                 normalizeForPDF(e.category || 'Genel'),
                 normalizeForPDF(e.description),
@@ -351,11 +351,10 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text(`Telefon: ${client.phone}`, 14, 28);
-        // Normalize date
         doc.text(normalizeForPDF(`Olusturulma: ${formatDate(Date.now())}`), 14, 34);
 
         const tableData = sessions.map(s => [
-            normalizeForPDF(formatDate(s.date)), // Fix date
+            normalizeForPDF(formatDate(s.date)),
             s.type === 'individual' ? 'Bireysel' : 'Grup',
             s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
@@ -440,7 +439,6 @@ const HomePage: React.FC<{
   isAccountingEnabled: boolean;
   templates: NoteTemplate[];
 }> = ({ clients, sessions, groups, themeConfig, handleSessionCompletion, deleteSession, user, templates, addSession, updateSession }) => {
-  // ... HomePage logic (same as previous)
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -626,16 +624,16 @@ const CalendarPage: React.FC<{
   deleteSession: (id: string) => void; handleSessionCompletion: (s: Session, n: string) => void;
   themeConfig: ThemeConfig; templates: NoteTemplate[];
 }> = ({ sessions, clients, groups, addSession, updateSession, deleteSession, handleSessionCompletion, themeConfig, templates }) => {
-    // ... CalendarPage logic (same as previous)
     const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newSession, setNewSession] = useState<Partial<Session>>({ type: 'individual', durationMinutes: 60, status: 'scheduled' });
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [completionNote, setCompletionNote] = useState('');
-  const [repeatCount, setRepeatCount] = useState(1);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newSession, setNewSession] = useState<Partial<Session>>({ type: 'individual', durationMinutes: 60, status: 'scheduled' });
+    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [completionNote, setCompletionNote] = useState('');
+    const [repeatCount, setRepeatCount] = useState(1);
+    const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
   const days = getMonthDays(currentDate.getFullYear(), currentDate.getMonth());
   const startDay = days[0].getDay() === 0 ? 6 : days[0].getDay() - 1; 
@@ -644,16 +642,14 @@ const CalendarPage: React.FC<{
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
+    if (window.innerWidth < 1024) setIsPanelExpanded(true);
   };
 
   const handleSaveSession = () => {
     if (!newSession.date || (!newSession.clientId && !newSession.groupId && !newSession.title)) return;
-    
-    // Repeat Logic
     for (let i = 0; i < repeatCount; i++) {
         const sessionDate = new Date(newSession.date);
-        sessionDate.setDate(sessionDate.getDate() + (i * 7)); // Weekly repeat
-        
+        sessionDate.setDate(sessionDate.getDate() + (i * 7));
         const sessionToSave: Session = {
             id: generateId(),
             type: newSession.type as any,
@@ -666,7 +662,6 @@ const CalendarPage: React.FC<{
         };
         addSession(sessionToSave);
     }
-    
     setIsModalOpen(false); setRepeatCount(1);
     setNewSession({ type: 'individual', durationMinutes: 60, status: 'scheduled' });
   };
@@ -687,22 +682,22 @@ const CalendarPage: React.FC<{
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-6 animate-[fadeIn_0.3s_ease-out]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-6 animate-[fadeIn_0.3s_ease-out] relative">
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm overflow-hidden border border-gray-100 dark:border-slate-800">
-        <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-slate-800">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white capitalize">
+        <div className="p-4 md:p-6 flex items-center justify-between border-b border-gray-100 dark:border-slate-800">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white capitalize">
             {currentDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
           </h2>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}><ChevronLeft size={20}/></Button>
-            <Button variant="ghost" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
-            <Button variant="ghost" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}><ChevronRight size={20}/></Button>
+          <div className="flex gap-1 md:gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}><ChevronLeft size={18}/></Button>
+            <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+            <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}><ChevronRight size={18}/></Button>
           </div>
         </div>
-        <div className="grid grid-cols-7 p-4 bg-gray-50 dark:bg-slate-950/50 text-center font-bold text-gray-500 dark:text-gray-400 sticky top-0 z-10 shadow-sm">
+        <div className="grid grid-cols-7 p-2 md:p-4 bg-gray-50 dark:bg-slate-950/50 text-center font-bold text-gray-500 dark:text-gray-400 sticky top-0 z-10 shadow-sm text-xs md:text-sm">
           {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(d => <div key={d} className="py-2">{d}</div>)}
         </div>
-        <div className="grid grid-cols-7 flex-1 auto-rows-fr overflow-y-auto custom-scrollbar p-2 gap-2 bg-white dark:bg-slate-900">
+        <div className="grid grid-cols-7 flex-1 auto-rows-fr overflow-y-auto custom-scrollbar p-1 md:p-2 gap-1 md:gap-2 bg-white dark:bg-slate-900">
           {allCells.map((date, i) => {
             if (!date) return <div key={i} className="bg-transparent" />;
             const isSelected = isSameDay(date, selectedDate);
@@ -714,20 +709,22 @@ const CalendarPage: React.FC<{
               <div 
                 key={i} 
                 onClick={() => handleDayClick(date)}
-                className={`min-h-[120px] p-2 rounded-2xl cursor-pointer transition-all border ${isSelected ? `border-2 ${themeConfig.accentClass.replace('text', 'border')} bg-blue-50 dark:bg-blue-900/10` : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700'} ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''}`}
+                className={`min-h-[70px] md:min-h-[120px] p-1 md:p-2 rounded-xl md:rounded-2xl cursor-pointer transition-all border flex flex-col ${isSelected ? `border-2 ${themeConfig.accentClass.replace('text', 'border')} bg-blue-50 dark:bg-blue-900/10` : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700'} ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''}`}
               >
-                <div className={`text-right font-bold mb-1 ${isSelected ? themeConfig.accentClass : (isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400')}`}>
+                <div className={`text-right font-bold mb-1 text-xs md:text-base ${isSelected ? themeConfig.accentClass : (isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400')}`}>
                     {date.getDate()}
                 </div>
                 {importantEvent && (
-                    <div className={`mb-1 text-[10px] font-bold truncate px-1.5 py-0.5 rounded-md ${importantEvent.type === 'national' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : (importantEvent.type === 'religious' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400')}`}>
+                    <div className={`mb-1 text-[8px] md:text-[10px] font-bold truncate px-1 py-0.5 rounded-md hidden md:block ${importantEvent.type === 'national' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : (importantEvent.type === 'religious' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400')}`}>
                         {importantEvent.label}
                     </div>
                 )}
-                <div className="space-y-1">
+                 {importantEvent && <div className="md:hidden w-1.5 h-1.5 rounded-full bg-red-400 ml-auto mb-1"></div>}
+                <div className="space-y-0.5 md:space-y-1 overflow-hidden">
                   {daySessions.map(s => (
-                    <div key={s.id} className={`text-[10px] px-2 py-1 rounded-lg truncate ${s.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-                      {new Date(s.date).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})} {s.type === 'group' ? (groups.find(g=>g.id===s.groupId)?.name || 'Grup') : (s.type === 'other' ? s.title : clients.find(c=>c.id===s.clientId)?.name)}
+                    <div key={s.id} className={`text-[8px] md:text-[10px] px-1 md:px-2 py-0.5 md:py-1 rounded-md truncate ${s.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+                      <span className="hidden md:inline">{new Date(s.date).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})} </span>
+                      {s.type === 'group' ? 'Grup' : (s.type === 'other' ? s.title : clients.find(c=>c.id===s.clientId)?.name)}
                     </div>
                   ))}
                 </div>
@@ -737,26 +734,36 @@ const CalendarPage: React.FC<{
         </div>
       </div>
 
-      <div className="w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-xl border-l border-gray-100 dark:border-slate-800 flex flex-col z-30 fixed lg:static bottom-0 left-0 right-0 max-h-[50vh] lg:max-h-full rounded-t-[2rem]">
-         <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-30 fixed lg:static bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[35vh]'} lg:h-full`}>
+         <div 
+            className="p-2 flex justify-center lg:hidden cursor-pointer active:bg-gray-50 dark:active:bg-slate-800 rounded-t-[2rem]"
+            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+         >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
+         </div>
+         <div className="px-6 pb-4 pt-2 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
              <div>
                  <h3 className="font-bold text-gray-900 dark:text-white text-lg">{selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}</h3>
                  <p className="text-sm text-gray-500">{selectedDateSessions.length} Randevu</p>
              </div>
-             <Button size="sm" activeTheme={themeConfig} onClick={() => {
-                 const now = new Date();
-                 const initialTime = isSameDay(selectedDate, now) 
-                    ? `${String(now.getHours() + 1).padStart(2, '0')}:00`
-                    : '10:00';
-                 // Fix local date string for input
-                 const year = selectedDate.getFullYear();
-                 const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                 const day = String(selectedDate.getDate()).padStart(2, '0');
-                 setNewSession({ ...newSession, date: new Date(`${year}-${month}-${day}T${initialTime}`).getTime() });
-                 setIsModalOpen(true);
-             }} icon={<Plus size={16} />}>Ekle</Button>
+             <div className="flex gap-2">
+                 <button className="lg:hidden p-2 text-gray-400" onClick={() => setIsPanelExpanded(!isPanelExpanded)}>
+                     {isPanelExpanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                 </button>
+                 <Button size="sm" activeTheme={themeConfig} onClick={() => {
+                     const now = new Date();
+                     const initialTime = isSameDay(selectedDate, now) 
+                        ? `${String(now.getHours() + 1).padStart(2, '0')}:00`
+                        : '10:00';
+                     const year = selectedDate.getFullYear();
+                     const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                     const day = String(selectedDate.getDate()).padStart(2, '0');
+                     setNewSession({ ...newSession, date: new Date(`${year}-${month}-${day}T${initialTime}`).getTime() });
+                     setIsModalOpen(true);
+                 }} icon={<Plus size={16} />}>Ekle</Button>
+             </div>
          </div>
-         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar pb-20 lg:pb-4">
              {selectedDateSessions.length === 0 ? (
                  <div className="text-center py-10 text-gray-400">
                      <Calendar size={48} className="mx-auto mb-2 opacity-20" />
@@ -1547,13 +1554,14 @@ const AccountingPage: React.FC<{
 
       <Card>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="space-y-4 overflow-x-auto">
+        <div className="overflow-x-auto pb-2">
+          <div className="space-y-4 min-w-[600px]">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
                  const t = item as Transaction;
                  const client = clients.find(c => c.id === t.clientId);
                  return (
-                    <div key={t.id} className="min-w-[500px] flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
                       <div className="flex items-center gap-4"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
                     </div>
@@ -1561,13 +1569,14 @@ const AccountingPage: React.FC<{
               } else {
                  const e = item as Expense;
                  return (
-                    <div key={e.id} className="min-w-[500px] flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                    <div key={e.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
                       <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
                       <div className="flex items-center gap-4"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
                     </div>
                  );
               }
             })}
+          </div>
         </div>
       </Card>
       <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Ödeme Al">
@@ -1607,6 +1616,14 @@ const App: React.FC = () => {
       process.env.REACT_APP_SUPABASE_URL || 'https://wesyhmkxxgybqndavjcy.supabase.co', 
       process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_KX0Jp67HyB07nLMOyrIpNg_0YTxPZaQ'
   ));
+
+  // --- Theme Effect ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) root.classList.add('dark');
+    else root.classList.remove('dark');
+  }, [colorMode]);
 
   const fetchData = async () => {
       if (!user) return;
@@ -1666,7 +1683,9 @@ const App: React.FC = () => {
                   const savedTheme = THEMES.find(t => t.name === settingsRes.data.theme);
                   if (savedTheme) setThemeConfig(savedTheme);
               }
-              if (settingsRes.data.dark_mode !== null) setColorMode(settingsRes.data.theme_mode || (settingsRes.data.dark_mode ? 'dark' : 'light'));
+              if (settingsRes.data.theme_mode) setColorMode(settingsRes.data.theme_mode);
+              else if (settingsRes.data.dark_mode !== null) setColorMode(settingsRes.data.dark_mode ? 'dark' : 'light');
+              
               if (settingsRes.data.accounting_enabled !== null) setIsAccountingEnabled(settingsRes.data.accounting_enabled);
               if (settingsRes.data.full_name) setUser(prev => prev ? {...prev, fullName: settingsRes.data.full_name} : null);
               if (settingsRes.data.avatar) setUser(prev => prev ? {...prev, avatar: settingsRes.data.avatar} : null);
@@ -1694,8 +1713,6 @@ const App: React.FC = () => {
   useEffect(() => {
       if (user) fetchData();
   }, [user]);
-
-  // ... CRUD operations (addSession, updateSession, etc.) - ensure to include saveAnamnesis, uploadAvatar, updatePassword
 
   const addSession = async (s: Session) => {
       setSessions(prev => [...prev, s]);
