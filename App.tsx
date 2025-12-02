@@ -11,7 +11,7 @@ import {
   ChevronLeft, ToggleRight, ToggleLeft, List, Download, Upload,
   Save, FileJson, Database, Link as LinkIcon, Loader2,
   MoreVertical, X, Edit, Archive, CheckSquare, LayoutList,
-  Laptop, Paperclip, BarChart, File, Repeat, StickyNote, Printer
+  Laptop, Paperclip, BarChart, File, Repeat, Printer, StickyNote
 } from 'lucide-react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
@@ -271,19 +271,38 @@ const runAutoTable = (doc: any, options: any) => {
     }
 };
 
+// Styles for PDF
+const pdfStyles = {
+    font: "helvetica",
+    fontSize: 9,
+    cellPadding: 3,
+    overflow: 'linebreak',
+    textColor: 40
+};
+
+const pdfHeadStyles = {
+    fillColor: [37, 99, 235], // Blue 600
+    textColor: 255,
+    fontStyle: 'bold'
+};
+
 const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], clients: Client[]) => {
     try {
         const doc = new jsPDF();
         
-        doc.setFontSize(18);
-        doc.text("Muhasebe Raporu", 14, 22);
-        doc.setFontSize(11);
-        doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 30);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Muhasebe Raporu", 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
+        doc.text("TeraPlan Otomatik Rapor", 14, 34);
 
         const tableData = [
             ...transactions.map(t => [
                 formatDate(t.date),
-                t.type === 'payment' ? 'Ödeme' : 'Borç',
+                t.type === 'payment' ? 'Odeme' : 'Borc', // Avoid non-ascii
                 clients.find(c => c.id === t.clientId)?.name || 'Bilinmeyen',
                 t.description,
                 t.type === 'payment' ? `+${formatCurrency(t.amount)}` : `-${formatCurrency(t.amount)}`
@@ -298,9 +317,15 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
         ].sort((a,b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
 
         runAutoTable(doc, {
-            startY: 35,
-            head: [['Tarih', 'Tür', 'İlgili Kişi/Kategori', 'Açıklama', 'Tutar']],
+            startY: 40,
+            head: [['Tarih', 'Tur', 'Ilgili Kisi/Kategori', 'Aciklama', 'Tutar']],
             body: tableData,
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: {
+                3: { cellWidth: 60 } // Description column width
+            }
         });
 
         doc.save(`muhasebe_raporu_${new Date().toISOString().slice(0,10)}.pdf`);
@@ -313,24 +338,33 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
 const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
     try {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text(`Danışan Geçmişi: ${client.name}`, 14, 22);
-        doc.setFontSize(11);
-        doc.text(`Telefon: ${client.phone}`, 14, 30);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text(`Danisan Gecmisi: ${client.name}`, 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Telefon: ${client.phone}`, 14, 28);
+        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 34);
 
         const tableData = sessions.map(s => [
             formatDate(s.date),
             s.type === 'individual' ? 'Bireysel' : 'Grup',
-            s.status === 'completed' ? 'Tamamlandı' : 'İptal/Planlı',
+            s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
             s.notes || ''
         ]);
 
         runAutoTable(doc, {
             startY: 40,
-            head: [['Tarih', 'Tür', 'Durum', 'Süre', 'Notlar']],
+            head: [['Tarih', 'Tur', 'Durum', 'Sure', 'Notlar']],
             body: tableData,
-            columnStyles: { 4: { cellWidth: 80 } } // Wrap text in notes column
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: { 
+                4: { cellWidth: 70 } // Wrap text in notes column
+            }
         });
 
         doc.save(`${client.name.replace(/\s+/g, '_')}_gecmis.pdf`);
@@ -343,21 +377,29 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
 const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
     try {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text(`Grup Geçmişi: ${group.name}`, 14, 22);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text(`Grup Gecmisi: ${group.name}`, 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
 
         const tableData = sessions.map(s => [
             formatDate(s.date),
-            s.status === 'completed' ? 'Tamamlandı' : 'İptal/Planlı',
+            s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
             s.notes || ''
         ]);
 
         runAutoTable(doc, {
-            startY: 40,
-            head: [['Tarih', 'Durum', 'Süre', 'Notlar']],
+            startY: 35,
+            head: [['Tarih', 'Durum', 'Sure', 'Notlar']],
             body: tableData,
-            columnStyles: { 3: { cellWidth: 100 } }
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: { 3: { cellWidth: 90 } }
         });
 
         doc.save(`${group.name.replace(/\s+/g, '_')}_gecmis.pdf`);
@@ -923,15 +965,15 @@ const ClientsPage: React.FC<{
         ) : (
             <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
                 {filteredClients.map((client, i) => (
-                     <div key={client.id} className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredClients.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
-                         <Link to={`/clients/${client.id}`} className="flex items-center gap-4 flex-1">
+                     <div key={client.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredClients.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
+                         <Link to={`/clients/${client.id}`} className="flex items-center gap-4 flex-1 mb-2 sm:mb-0">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${themeConfig.primaryClass}`}>{client.name.substring(0, 2).toUpperCase()}</div>
                             <div>
                                 <h3 className="font-bold text-gray-900 dark:text-white">{client.name}</h3>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{client.phone}</p>
                             </div>
                          </Link>
-                         <div className="flex items-center gap-6 mr-4">
+                         <div className="flex items-center justify-between sm:justify-end gap-6 sm:mr-4">
                             <div className="text-right">
                                 <p className={`font-bold text-sm ${client.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(client.balance)}</p>
                             </div>
@@ -1086,12 +1128,12 @@ const GroupsPage: React.FC<{
          ) : (
              <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
                  {filteredGroups.map((group, i) => (
-                     <div key={group.id} className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredGroups.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
-                         <div className="flex-1">
+                     <div key={group.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredGroups.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
+                         <div className="flex-1 mb-2 sm:mb-0">
                              <h3 className="font-bold text-gray-900 dark:text-white">{group.name}</h3>
                              <p className="text-xs text-gray-500 dark:text-gray-400">{group.clientIds.length} Katılımcı</p>
                          </div>
-                         <div className="flex gap-2">
+                         <div className="flex items-center justify-between sm:justify-end gap-2">
                             <button onClick={() => openHistory(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-blue-600"><History size={16} /></button>
                             <button onClick={() => handleOpenEdit(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-blue-600"><Edit size={16} /></button>
                             <button onClick={() => toggleGroupStatus(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-orange-600">{group.isActive ? <Archive size={16} /> : <CheckSquare size={16} />}</button>
@@ -1340,11 +1382,16 @@ const ClientProfilePage: React.FC<{
                      <Button variant="secondary" onClick={() => {
                         try {
                             const doc = new jsPDF();
+                            doc.setFont("helvetica", "bold");
                             doc.text(`Tarih: ${formatDate(viewNoteSession!.date)}`, 14, 20);
-                            doc.text(`Danışan: ${client.name}`, 14, 30);
+                            doc.text(`Danisan: ${client.name}`, 14, 28);
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(10);
+                            
                             const splitText = doc.splitTextToSize(viewNoteSession!.notes || '', 180);
-                            doc.text(splitText, 14, 40);
-                            doc.save('gorusme_notu.pdf');
+                            doc.text(splitText, 14, 38);
+                            
+                            doc.save(`${client.name}_gorusme_notu.pdf`);
                         } catch (e:any) {
                             alert("PDF oluşturulamadı: " + e.message);
                         }
@@ -1429,13 +1476,13 @@ const AccountingPage: React.FC<{
       </div>
 
       {/* Time Filter Tabs */}
-      <div className="flex justify-between items-center">
-        <div className="flex p-1 bg-white dark:bg-slate-900 rounded-xl w-fit border border-gray-100 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-wrap p-1 bg-white dark:bg-slate-900 rounded-xl w-full sm:w-fit border border-gray-100 dark:border-slate-800">
             {[ {id: 'day', label: 'Günlük'}, {id: 'week', label: 'Haftalık'}, {id: 'month', label: 'Aylık'}, {id: 'all', label: 'Tümü'} ].map(t => (
                 <button 
                     key={t.id} 
                     onClick={() => setTimeFilter(t.id as any)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeFilter === t.id ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeFilter === t.id ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                     {t.label}
                 </button>
@@ -1464,13 +1511,13 @@ const AccountingPage: React.FC<{
 
       <Card>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-x-auto">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
                  const t = item as Transaction;
                  const client = clients.find(c => c.id === t.clientId);
                  return (
-                    <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div key={t.id} className="min-w-[500px] flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
                       <div className="flex items-center gap-4"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
                     </div>
@@ -1478,7 +1525,7 @@ const AccountingPage: React.FC<{
               } else {
                  const e = item as Expense;
                  return (
-                    <div key={e.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                    <div key={e.id} className="min-w-[500px] flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
                       <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
                       <div className="flex items-center gap-4"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
                     </div>
