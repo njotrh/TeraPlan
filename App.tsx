@@ -20,7 +20,7 @@ import autoTable from 'jspdf-autotable';
 import { 
   User, Client, Session, Group, THEMES, ThemeConfig, Transaction, Expense, Document, NoteTemplate, Anamnesis,
   generateId, formatDate, getMonthDays, isSameDay, getWhatsAppLink, getPaymentReminderLink,
-  getImportantEvent, formatCurrency, DEFAULT_NOTE_TEMPLATES
+  getImportantEvent, formatCurrency
 } from './types';
 import { Button, Card, Input, Modal, SearchableSelect } from './components/UI';
 
@@ -734,7 +734,7 @@ const CalendarPage: React.FC<{
         </div>
       </div>
 
-      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-[60] fixed lg:static bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[85px]'} lg:h-full`}>
+      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-40 fixed lg:static bottom-[80px] lg:bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[85px]'} lg:h-full`}>
          <div 
             className="p-2 flex justify-center lg:hidden cursor-pointer active:bg-gray-50 dark:active:bg-slate-800 rounded-t-[2rem]"
             onClick={() => setIsPanelExpanded(!isPanelExpanded)}
