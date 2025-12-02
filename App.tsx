@@ -12,7 +12,7 @@ import {
   Save, FileJson, Database, Link as LinkIcon, Loader2,
   MoreVertical, X, Edit, Archive, CheckSquare, LayoutList,
   Laptop, Paperclip, BarChart, File, Repeat, Printer, StickyNote,
-  Eye, EyeOff, ChevronUp, ChevronDown
+  Eye, EyeOff, ChevronUp, ChevronDown, FileEdit
 } from 'lucide-react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
@@ -228,7 +228,7 @@ const Layout: React.FC<{
         ))}
       </div>
 
-      <main className="flex-1 md:ml-72 p-4 md:p-8 bg-gray-50 dark:bg-slate-950 min-h-screen pb-24 md:pb-8">
+      <main className="flex-1 md:ml-72 p-4 md:p-8 bg-gray-50 dark:bg-slate-950 min-h-screen pb-24 md:pb-8 overflow-hidden">
         {children}
       </main>
     </div>
@@ -711,7 +711,7 @@ const CalendarPage: React.FC<{
                 onClick={() => handleDayClick(date)}
                 className={`min-h-[70px] md:min-h-[120px] p-1 md:p-2 rounded-xl md:rounded-2xl cursor-pointer transition-all border flex flex-col ${isSelected ? `border-2 ${themeConfig.accentClass.replace('text', 'border')} bg-blue-50 dark:bg-blue-900/10` : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700'} ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''}`}
               >
-                <div className={`text-right font-bold mb-1 text-xs md:text-base ${isSelected ? themeConfig.accentClass : (isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400')}`}>
+                <div className={`text-right font-bold mb-1 text-[8px] md:text-base ${isSelected ? themeConfig.accentClass : (isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400')}`}>
                     {date.getDate()}
                 </div>
                 {importantEvent && (
@@ -1336,12 +1336,19 @@ const SettingsPageImpl: React.FC<{
     updateProfile: (name: string) => void;
     uploadAvatar: (file: File) => void;
     updatePassword: (pass: string) => void;
-}> = ({ user, themeConfig, setThemeConfig, colorMode, setColorMode, isAccountingEnabled, setIsAccountingEnabled, exportData, importData, updateProfile, uploadAvatar, updatePassword }) => {
+    templates: NoteTemplate[];
+    saveTemplate: (t: NoteTemplate) => void;
+    deleteTemplate: (id: string) => void;
+    onLogout: () => void;
+}> = ({ user, themeConfig, setThemeConfig, colorMode, setColorMode, isAccountingEnabled, setIsAccountingEnabled, exportData, importData, updateProfile, uploadAvatar, updatePassword, templates, saveTemplate, deleteTemplate, onLogout }) => {
     const [fullName, setFullName] = useState(user.fullName || '');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [templateFormData, setTemplateFormData] = useState<Partial<NoteTemplate>>({});
+    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
     
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -1355,6 +1362,16 @@ const SettingsPageImpl: React.FC<{
         if (newPassword !== confirmPassword) return alert("Şifreler eşleşmiyor.");
         updatePassword(newPassword);
         setNewPassword(''); setConfirmPassword('');
+    };
+
+    const handleTemplateSubmit = () => {
+        if (!templateFormData.label || !templateFormData.content) return;
+        saveTemplate({
+            id: editingTemplateId || generateId(),
+            label: templateFormData.label,
+            content: templateFormData.content
+        });
+        setIsTemplateModalOpen(false); setEditingTemplateId(null); setTemplateFormData({});
     };
 
     return (
@@ -1393,6 +1410,25 @@ const SettingsPageImpl: React.FC<{
                     <Input type="password" label="Şifre Tekrar" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
                     <Button onClick={handlePasswordSubmit} variant="secondary" activeTheme={themeConfig}>Şifreyi Değiştir</Button>
                 </div>
+            </Card>
+
+            <Card>
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><StickyNote size={20} /> Not Şablonları</h3>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingTemplateId(null); setTemplateFormData({}); setIsTemplateModalOpen(true); }} icon={<Plus size={16}/>}>Yeni</Button>
+                 </div>
+                 <div className="space-y-2">
+                     {templates.map(tpl => (
+                         <div key={tpl.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                             <span className="text-sm font-medium text-gray-900 dark:text-white">{tpl.label}</span>
+                             <div className="flex gap-2">
+                                 <button onClick={() => { setEditingTemplateId(tpl.id); setTemplateFormData(tpl); setIsTemplateModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg"><Edit size={16}/></button>
+                                 <button onClick={() => deleteTemplate(tpl.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg"><Trash2 size={16}/></button>
+                             </div>
+                         </div>
+                     ))}
+                     {templates.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Kayıtlı şablon bulunmuyor.</p>}
+                 </div>
             </Card>
             
             <Card>
@@ -1444,7 +1480,20 @@ const SettingsPageImpl: React.FC<{
                      </div>
                  </div>
             </Card>
+
+            <Button variant="danger" onClick={onLogout} className="w-full py-4 text-lg" icon={<LogOut size={20}/>}>Çıkış Yap</Button>
             <div className="text-center text-xs text-gray-400 pb-8">TeraPlan v0.2</div>
+
+            <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} title={editingTemplateId ? "Şablon Düzenle" : "Yeni Şablon"}>
+                <div className="space-y-4">
+                    <Input label="Şablon Adı" value={templateFormData.label || ''} onChange={e => setTemplateFormData({...templateFormData, label: e.target.value})} className="text-gray-900" />
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-2">İçerik</label>
+                        <textarea className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-opacity-50 min-h-[150px] text-gray-900 dark:text-white resize-none" value={templateFormData.content || ''} onChange={e => setTemplateFormData({...templateFormData, content: e.target.value})} />
+                    </div>
+                    <Button onClick={handleTemplateSubmit} activeTheme={themeConfig} className="w-full mt-4">Kaydet</Button>
+                </div>
+            </Modal>
         </div>
     );
 };
@@ -1513,7 +1562,7 @@ const AccountingPage: React.FC<{
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out]">
+    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out] w-full overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div><h2 className="text-3xl font-bold text-gray-900 dark:text-white">Muhasebe</h2><p className="text-gray-500 dark:text-gray-400">Finansal durum, ödeme ve gider takibi</p></div>
         <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsExpenseModalOpen(true)} activeTheme={themeConfig} icon={<TrendingDown size={20} />}>Gider Ekle</Button><Button onClick={() => setIsPaymentModalOpen(true)} activeTheme={themeConfig} icon={<Plus size={20} />}>Ödeme Al</Button></div>
@@ -1552,9 +1601,9 @@ const AccountingPage: React.FC<{
           <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Danışanlardan Bekleyen Toplam Bakiye</p><p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(totalOutstanding)}</p></div></Card>
       </div>
 
-      <Card>
+      <Card className="w-full">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="overflow-x-auto pb-2">
+        <div className="overflow-x-auto pb-2 -mx-6 px-6">
           <div className="space-y-4 min-w-[600px]">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
@@ -1617,7 +1666,6 @@ const App: React.FC = () => {
       process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_KX0Jp67HyB07nLMOyrIpNg_0YTxPZaQ'
   ));
 
-  // --- Theme Effect ---
   useEffect(() => {
     const root = window.document.documentElement;
     const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -1628,14 +1676,15 @@ const App: React.FC = () => {
   const fetchData = async () => {
       if (!user) return;
       try {
-          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes, anamnesisRes] = await Promise.all([
+          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes, anamnesisRes, templatesRes] = await Promise.all([
               supabase.from('clients').select('*'),
               supabase.from('groups').select('*'),
               supabase.from('sessions').select('*'),
               supabase.from('transactions').select('*'),
               supabase.from('expenses').select('*'),
               supabase.from('user_settings').select('*').single(),
-              supabase.from('anamnesis').select('*')
+              supabase.from('anamnesis').select('*'),
+              supabase.from('note_templates').select('*')
           ]);
 
           if (clientsRes.data) {
@@ -1676,6 +1725,11 @@ const App: React.FC = () => {
                   socialHistory: a.social_history,
                   traumaHistory: a.trauma_history,
                   updatedAt: a.updated_at
+              })));
+          }
+          if (templatesRes.data && templatesRes.data.length > 0) {
+              setTemplates(templatesRes.data.map((t: any) => ({
+                  id: t.id, label: t.label, content: t.content
               })));
           }
           if (settingsRes.data) {
@@ -1889,8 +1943,21 @@ const App: React.FC = () => {
       else alert("Şifre başarıyla güncellendi.");
   };
 
+  const saveTemplate = async (t: NoteTemplate) => {
+      setTemplates(prev => {
+          const idx = prev.findIndex(item => item.id === t.id);
+          if (idx >= 0) { const newArr = [...prev]; newArr[idx] = t; return newArr; }
+          return [...prev, t];
+      });
+      await supabase.from('note_templates').upsert({ id: t.id, user_id: (await supabase.auth.getUser()).data.user?.id, label: t.label, content: t.content });
+  };
+  const deleteTemplate = async (id: string) => {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+      await supabase.from('note_templates').delete().eq('id', id);
+  };
+
   const exportData = () => {
-      const data = { clients, sessions, groups, transactions, expenses, settings: { theme: themeConfig.name, isAccountingEnabled } };
+      const data = { clients, sessions, groups, transactions, expenses, settings: { theme: themeConfig.name, isAccountingEnabled }, templates };
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1950,6 +2017,7 @@ const App: React.FC = () => {
                   isAccountingEnabled={isAccountingEnabled} setIsAccountingEnabled={setIsAccountingEnabled} 
                   exportData={exportData} importData={importData} updateProfile={updateProfile}
                   uploadAvatar={uploadAvatar} updatePassword={updatePassword}
+                  templates={templates} saveTemplate={saveTemplate} deleteTemplate={deleteTemplate} onLogout={() => supabase.auth.signOut()}
               />
           } />
         </Routes>
