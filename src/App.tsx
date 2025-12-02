@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Settings, LogOut, Plus, Search, 
@@ -271,19 +270,38 @@ const runAutoTable = (doc: any, options: any) => {
     }
 };
 
+// Styles for PDF
+const pdfStyles = {
+    font: "helvetica",
+    fontSize: 9,
+    cellPadding: 3,
+    overflow: 'linebreak',
+    textColor: 40
+};
+
+const pdfHeadStyles = {
+    fillColor: [37, 99, 235], // Blue 600
+    textColor: 255,
+    fontStyle: 'bold'
+};
+
 const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], clients: Client[]) => {
     try {
         const doc = new jsPDF();
         
-        doc.setFontSize(18);
-        doc.text("Muhasebe Raporu", 14, 22);
-        doc.setFontSize(11);
-        doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 30);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Muhasebe Raporu", 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
+        doc.text("TeraPlan Otomatik Rapor", 14, 34);
 
         const tableData = [
             ...transactions.map(t => [
                 formatDate(t.date),
-                t.type === 'payment' ? 'Ödeme' : 'Borç',
+                t.type === 'payment' ? 'Odeme' : 'Borc', // Avoid non-ascii
                 clients.find(c => c.id === t.clientId)?.name || 'Bilinmeyen',
                 t.description,
                 t.type === 'payment' ? `+${formatCurrency(t.amount)}` : `-${formatCurrency(t.amount)}`
@@ -298,9 +316,15 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
         ].sort((a,b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
 
         runAutoTable(doc, {
-            startY: 35,
-            head: [['Tarih', 'Tür', 'İlgili Kişi/Kategori', 'Açıklama', 'Tutar']],
+            startY: 40,
+            head: [['Tarih', 'Tur', 'Ilgili Kisi/Kategori', 'Aciklama', 'Tutar']],
             body: tableData,
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: {
+                3: { cellWidth: 60 } // Description column width
+            }
         });
 
         doc.save(`muhasebe_raporu_${new Date().toISOString().slice(0,10)}.pdf`);
@@ -313,24 +337,33 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
 const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
     try {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text(`Danışan Geçmişi: ${client.name}`, 14, 22);
-        doc.setFontSize(11);
-        doc.text(`Telefon: ${client.phone}`, 14, 30);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text(`Danisan Gecmisi: ${client.name}`, 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Telefon: ${client.phone}`, 14, 28);
+        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 34);
 
         const tableData = sessions.map(s => [
             formatDate(s.date),
             s.type === 'individual' ? 'Bireysel' : 'Grup',
-            s.status === 'completed' ? 'Tamamlandı' : 'İptal/Planlı',
+            s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
             s.notes || ''
         ]);
 
         runAutoTable(doc, {
             startY: 40,
-            head: [['Tarih', 'Tür', 'Durum', 'Süre', 'Notlar']],
+            head: [['Tarih', 'Tur', 'Durum', 'Sure', 'Notlar']],
             body: tableData,
-            columnStyles: { 4: { cellWidth: 80 } } // Wrap text in notes column
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: { 
+                4: { cellWidth: 70 } // Wrap text in notes column
+            }
         });
 
         doc.save(`${client.name.replace(/\s+/g, '_')}_gecmis.pdf`);
@@ -343,21 +376,29 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
 const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
     try {
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text(`Grup Geçmişi: ${group.name}`, 14, 22);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text(`Grup Gecmisi: ${group.name}`, 14, 20);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
 
         const tableData = sessions.map(s => [
             formatDate(s.date),
-            s.status === 'completed' ? 'Tamamlandı' : 'İptal/Planlı',
+            s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
             s.notes || ''
         ]);
 
         runAutoTable(doc, {
-            startY: 40,
-            head: [['Tarih', 'Durum', 'Süre', 'Notlar']],
+            startY: 35,
+            head: [['Tarih', 'Durum', 'Sure', 'Notlar']],
             body: tableData,
-            columnStyles: { 3: { cellWidth: 100 } }
+            theme: 'striped',
+            styles: pdfStyles,
+            headStyles: pdfHeadStyles,
+            columnStyles: { 3: { cellWidth: 90 } }
         });
 
         doc.save(`${group.name.replace(/\s+/g, '_')}_gecmis.pdf`);
@@ -1334,18 +1375,4 @@ const ClientProfilePage: React.FC<{
          <Modal isOpen={!!viewNoteSession} onClose={() => setViewNoteSession(null)} title="Görüşme Detayı">
              <div className="space-y-4">
                  <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-800 pb-2"><span>{viewNoteSession && formatDate(viewNoteSession.date)}</span><span>{viewNoteSession?.durationMinutes} dk</span></div>
-                 <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl min-h-[150px] whitespace-pre-wrap text-gray-800 dark:text-gray-200">{viewNoteSession?.notes || 'Not bulunmuyor.'}</div>
-                 <div className="text-right text-xs text-gray-400">{viewNoteSession?.fee ? `Seans Ücreti: ${formatCurrency(viewNoteSession.fee)}` : ''}</div>
-                 <div className="flex gap-2">
-                     <Button variant="secondary" onClick={() => {
-                        try {
-                            const doc = new jsPDF();
-                            doc.text(`Tarih: ${formatDate(viewNoteSession!.date)}`, 14, 20);
-                            doc.text(`Danışan: ${client.name}`, 14, 30);
-                            const splitText = doc.splitTextToSize(viewNoteSession!.notes || '', 180);
-                            doc.text(splitText, 14, 40);
-                            doc.save('gorusme_notu.pdf');
-                        } catch (e:any) {
-                            alert("PDF oluşturulamadı: " + e.message);
-                        }
-                     }} icon={<Printer size={16}
+                 <div className="p-4 bg-gray-50 dark:bg-slate-800

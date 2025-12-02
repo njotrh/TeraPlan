@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Settings, LogOut, Plus, Search, 
@@ -965,15 +964,15 @@ const ClientsPage: React.FC<{
         ) : (
             <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
                 {filteredClients.map((client, i) => (
-                     <div key={client.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredClients.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
-                         <Link to={`/clients/${client.id}`} className="flex items-center gap-4 flex-1 mb-2 sm:mb-0">
+                     <div key={client.id} className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredClients.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
+                         <Link to={`/clients/${client.id}`} className="flex items-center gap-4 flex-1">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${themeConfig.primaryClass}`}>{client.name.substring(0, 2).toUpperCase()}</div>
                             <div>
                                 <h3 className="font-bold text-gray-900 dark:text-white">{client.name}</h3>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{client.phone}</p>
                             </div>
                          </Link>
-                         <div className="flex items-center justify-between sm:justify-end gap-6 sm:mr-4">
+                         <div className="flex items-center gap-6 mr-4">
                             <div className="text-right">
                                 <p className={`font-bold text-sm ${client.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(client.balance)}</p>
                             </div>
@@ -1128,12 +1127,12 @@ const GroupsPage: React.FC<{
          ) : (
              <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
                  {filteredGroups.map((group, i) => (
-                     <div key={group.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredGroups.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
-                         <div className="flex-1 mb-2 sm:mb-0">
+                     <div key={group.id} className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${i !== filteredGroups.length -1 ? 'border-b border-gray-100 dark:border-slate-800' : ''}`}>
+                         <div className="flex-1">
                              <h3 className="font-bold text-gray-900 dark:text-white">{group.name}</h3>
                              <p className="text-xs text-gray-500 dark:text-gray-400">{group.clientIds.length} Katılımcı</p>
                          </div>
-                         <div className="flex items-center justify-between sm:justify-end gap-2">
+                         <div className="flex gap-2">
                             <button onClick={() => openHistory(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-blue-600"><History size={16} /></button>
                             <button onClick={() => handleOpenEdit(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-blue-600"><Edit size={16} /></button>
                             <button onClick={() => toggleGroupStatus(group)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-400 hover:text-orange-600">{group.isActive ? <Archive size={16} /> : <CheckSquare size={16} />}</button>
@@ -1382,16 +1381,11 @@ const ClientProfilePage: React.FC<{
                      <Button variant="secondary" onClick={() => {
                         try {
                             const doc = new jsPDF();
-                            doc.setFont("helvetica", "bold");
                             doc.text(`Tarih: ${formatDate(viewNoteSession!.date)}`, 14, 20);
-                            doc.text(`Danisan: ${client.name}`, 14, 28);
-                            doc.setFont("helvetica", "normal");
-                            doc.setFontSize(10);
-                            
+                            doc.text(`Danışan: ${client.name}`, 14, 30);
                             const splitText = doc.splitTextToSize(viewNoteSession!.notes || '', 180);
-                            doc.text(splitText, 14, 38);
-                            
-                            doc.save(`${client.name}_gorusme_notu.pdf`);
+                            doc.text(splitText, 14, 40);
+                            doc.save('gorusme_notu.pdf');
                         } catch (e:any) {
                             alert("PDF oluşturulamadı: " + e.message);
                         }
@@ -1745,7 +1739,7 @@ const SettingsPage: React.FC<{
                 <div><p className="font-medium text-gray-700 dark:text-gray-300 mb-3">Tema Rengi</p><div className="flex flex-wrap gap-3 justify-center sm:justify-start">{THEMES.map(t => (<button key={t.name} onClick={() => setThemeName(t.name)} className={`w-10 h-10 rounded-full transition-transform hover:scale-110 flex items-center justify-center ${t.primaryClass} ${themeConfig.name === t.name ? 'ring-4 ring-offset-2 ring-gray-300 dark:ring-slate-700' : ''}`} title={t.label}>{themeConfig.name === t.name && <CheckCircle2 size={16} className="text-white" />}</button>))}</div></div>
             </Card>
             <div className="text-center pb-8 opacity-40 hover:opacity-100 transition-opacity">
-               <p className="text-xs font-mono text-gray-400 dark:text-gray-600">TeraPlan v0.1</p>
+               <p className="text-xs font-mono text-gray-400 dark:text-gray-600">TeraPlan v0.2</p>
             </div>
 
             <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} title={selectedTemplate ? "Şablonu Düzenle" : "Yeni Şablon"}>
@@ -1845,6 +1839,7 @@ const App: React.FC = () => {
                 id: x.id,
                 type: x.type,
                 clientId: x.client_id,
+                group_id: x.group_id,
                 groupId: x.group_id,
                 title: x.title,
                 date: x.date,
