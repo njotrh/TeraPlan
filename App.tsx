@@ -589,7 +589,7 @@ const HomePage: React.FC<{
                <p className="text-gray-600 dark:text-gray-300">Bu görüşmeyi tamamlamak üzeresiniz. Dilerseniz görüşme notu ekleyebilirsiniz.</p>
                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                    {templates.map(tpl => (
-                       <button key={tpl.id} onClick={() => setCompletionNote(prev => prev + tpl.content)} className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-xs rounded-lg whitespace-nowrap hover:bg-blue-50 hover:text-blue-600 border border-gray-200 dark:border-slate-700">
+                       <button key={tpl.id} onClick={() => setCompletionNote(prev => prev + tpl.content)} className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-xs rounded-lg whitespace-nowrap hover:bg-blue-50 hover:text-blue-600 border border-gray-200 dark:border-slate-700">
                            + {tpl.label}
                        </button>
                    ))}
@@ -848,7 +848,7 @@ const CalendarPage: React.FC<{
            <div className="space-y-4">
                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                    {templates.map(tpl => (
-                       <button key={tpl.id} onClick={() => setCompletionNote(prev => prev + tpl.content)} className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-xs rounded-lg whitespace-nowrap hover:bg-blue-50 hover:text-blue-600 border border-gray-200 dark:border-slate-700">
+                       <button key={tpl.id} onClick={() => setCompletionNote(prev => prev + tpl.content)} className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-xs rounded-lg whitespace-nowrap hover:bg-blue-50 hover:text-blue-600 border border-gray-200 dark:border-slate-700">
                            + {tpl.label}
                        </button>
                    ))}
@@ -1655,7 +1655,7 @@ const App: React.FC = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [templates, setTemplates] = useState<NoteTemplate[]>(DEFAULT_NOTE_TEMPLATES);
+  const [templates, setTemplates] = useState<NoteTemplate[]>([]);
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(THEMES[0]);
   const [colorMode, setColorMode] = useState<'light' | 'dark' | 'system'>('system');
   const [isAccountingEnabled, setIsAccountingEnabled] = useState(true);
