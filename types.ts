@@ -1,5 +1,3 @@
-
-
 import { LucideIcon } from 'lucide-react';
 
 export interface User {
@@ -8,6 +6,7 @@ export interface User {
   avatar?: string;
   password?: string; // In a real app, never store plain text passwords
   fullName?: string;
+  id?: string;
 }
 
 export interface Client {

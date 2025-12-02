@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Settings, LogOut, Plus, Search, 
@@ -90,12 +88,6 @@ const Routes: React.FC<{children: React.ReactNode}> = ({ children }) => {
 };
 
 const Route: React.FC<{path: string; element: React.ReactNode}> = () => null;
-
-const Navigate: React.FC<{to: string; replace?: boolean}> = ({ to }) => {
-  const navigate = useNavigate();
-  useEffect(() => navigate(to), [to]);
-  return null;
-};
 
 const useParams = <T extends Record<string, string | undefined>>() => {
   const { pathname } = useLocation();
@@ -298,24 +290,27 @@ const pdfHeadStyles = {
 const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], clients: Client[]) => {
     try {
         const doc = new jsPDF();
+        
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.text("Muhasebe Raporu", 14, 20);
+        
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
+        // Normalize date to fix 'Aral1k' issue
+        doc.text(normalizeForPDF(`Tarih: ${formatDate(Date.now())}`), 14, 28);
         doc.text("TeraPlan Otomatik Rapor", 14, 34);
 
         const tableData = [
             ...transactions.map(t => [
-                formatDate(t.date),
+                normalizeForPDF(formatDate(t.date)), // Fix date in table
                 normalizeForPDF(t.type === 'payment' ? 'Ödeme' : 'Borç'),
                 normalizeForPDF(clients.find(c => c.id === t.clientId)?.name || 'Bilinmeyen'),
                 normalizeForPDF(t.description),
                 t.type === 'payment' ? `+${formatCurrency(t.amount)}` : `-${formatCurrency(t.amount)}`
             ]),
             ...expenses.map(e => [
-                formatDate(e.date),
+                normalizeForPDF(formatDate(e.date)), // Fix date in table
                 'Gider',
                 normalizeForPDF(e.category || 'Genel'),
                 normalizeForPDF(e.description),
@@ -330,10 +325,20 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
             theme: 'striped',
             styles: pdfStyles,
             headStyles: pdfHeadStyles,
-            columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 20 }, 2: { cellWidth: 40 }, 3: { cellWidth: 60 }, 4: { cellWidth: 25 } }
+            columnStyles: {
+                0: { cellWidth: 35 },
+                1: { cellWidth: 20 },
+                2: { cellWidth: 40 },
+                3: { cellWidth: 60 },
+                4: { cellWidth: 25 }
+            }
         });
+
         doc.save(`muhasebe_raporu_${new Date().toISOString().slice(0,10)}.pdf`);
-    } catch (e: any) { alert("PDF Hatası: " + e.message); }
+    } catch (e: any) {
+        console.error("PDF Export Error:", e);
+        alert("PDF oluşturulurken bir hata meydana geldi: " + e.message);
+    }
 };
 
 const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
@@ -342,13 +347,15 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.text(normalizeForPDF(`Danisan Gecmisi: ${client.name}`), 14, 20);
+        
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text(`Telefon: ${client.phone}`, 14, 28);
-        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 34);
+        // Normalize date
+        doc.text(normalizeForPDF(`Olusturulma: ${formatDate(Date.now())}`), 14, 34);
 
         const tableData = sessions.map(s => [
-            formatDate(s.date),
+            normalizeForPDF(formatDate(s.date)), // Fix date
             s.type === 'individual' ? 'Bireysel' : 'Grup',
             s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
@@ -362,10 +369,20 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
             theme: 'striped',
             styles: pdfStyles,
             headStyles: pdfHeadStyles,
-            columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 25 }, 2: { cellWidth: 25 }, 3: { cellWidth: 20 }, 4: { cellWidth: 75 } }
+            columnStyles: { 
+                0: { cellWidth: 35 },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 25 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 75 } 
+            }
         });
+
         doc.save(`${normalizeForPDF(client.name).replace(/\s+/g, '_')}_gecmis.pdf`);
-    } catch (e: any) { alert("PDF Hatası: " + e.message); }
+    } catch (e: any) {
+        console.error("PDF Export Error:", e);
+        alert("PDF oluşturulurken bir hata meydana geldi: " + e.message);
+    }
 };
 
 const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
@@ -374,12 +391,13 @@ const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.text(normalizeForPDF(`Grup Gecmisi: ${group.name}`), 14, 20);
+        
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`, 14, 28);
+        doc.text(normalizeForPDF(`Olusturulma: ${formatDate(Date.now())}`), 14, 28);
 
         const tableData = sessions.map(s => [
-            formatDate(s.date),
+            normalizeForPDF(formatDate(s.date)),
             s.status === 'completed' ? 'Tamamlandi' : 'Iptal/Planli',
             s.durationMinutes + ' dk',
             normalizeForPDF(s.notes || '')
@@ -392,20 +410,37 @@ const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
             theme: 'striped',
             styles: pdfStyles,
             headStyles: pdfHeadStyles,
-            columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 30 }, 2: { cellWidth: 20 }, 3: { cellWidth: 90 } }
+            columnStyles: { 
+                0: { cellWidth: 40 },
+                1: { cellWidth: 30 },
+                2: { cellWidth: 20 },
+                3: { cellWidth: 90 } 
+            }
         });
+
         doc.save(`${normalizeForPDF(group.name).replace(/\s+/g, '_')}_gecmis.pdf`);
-    } catch (e: any) { alert("PDF Hatası: " + e.message); }
+    } catch (e: any) {
+        console.error("PDF Export Error:", e);
+        alert("PDF oluşturulurken bir hata meydana geldi: " + e.message);
+    }
 }
 
 // --- Page Components ---
 
 const HomePage: React.FC<{
-  clients: Client[]; sessions: Session[]; groups: Group[]; themeConfig: ThemeConfig;
-  updateSession: (s: Session) => void; addSession: (s: Session) => void;
-  handleSessionCompletion: (s: Session, note: string) => void; deleteSession: (id: string) => void;
-  user: User; isAccountingEnabled: boolean; templates: NoteTemplate[];
+  clients: Client[];
+  sessions: Session[];
+  groups: Group[];
+  themeConfig: ThemeConfig;
+  updateSession: (s: Session) => void;
+  addSession: (s: Session) => void;
+  handleSessionCompletion: (s: Session, note: string) => void;
+  deleteSession: (id: string) => void;
+  user: User;
+  isAccountingEnabled: boolean;
+  templates: NoteTemplate[];
 }> = ({ clients, sessions, groups, themeConfig, handleSessionCompletion, deleteSession, user, templates, addSession, updateSession }) => {
+  // ... HomePage logic (same as previous)
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -591,7 +626,8 @@ const CalendarPage: React.FC<{
   deleteSession: (id: string) => void; handleSessionCompletion: (s: Session, n: string) => void;
   themeConfig: ThemeConfig; templates: NoteTemplate[];
 }> = ({ sessions, clients, groups, addSession, updateSession, deleteSession, handleSessionCompletion, themeConfig, templates }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+    // ... CalendarPage logic (same as previous)
+    const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSession, setNewSession] = useState<Partial<Session>>({ type: 'individual', durationMinutes: 60, status: 'scheduled' });
@@ -824,19 +860,10 @@ const CalendarPage: React.FC<{
   );
 };
 
-const ClientsPage: React.FC = () => {
-    // This component needs data props passed from App in a real implementation.
-    // Since App controls the state, we need to lift state up or use context.
-    // For this refactor, I will assume props are passed or context is used.
-    // However, to keep it simple within this file structure, I will rely on props.
-    // But `Routes` in `App` doesn't pass props to `element` dynamically easily without wrapper.
-    // I will modify `App` to pass props to `ClientsPage`.
-    return null; // Implemented below inside App
-}
-// Redefining ClientsPage with props for use in App
 const ClientsPageImpl: React.FC<{ 
     clients: Client[]; addClient: (c: Client) => void; updateClient: (c: Client) => void; deleteClient: (id: string) => void; themeConfig: ThemeConfig; 
 }> = ({ clients, addClient, updateClient, deleteClient, themeConfig }) => {
+    // ... ClientsPageImpl content
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const [search, setSearch] = useState('');
@@ -1130,18 +1157,27 @@ const ClientProfilePageImpl: React.FC<{
     updateClient: (c: Client) => void; themeConfig: ThemeConfig;
     isAccountingEnabled: boolean; addSession: (s: Session) => void;
     user: User;
-}> = ({ clients, sessions, groups, transactions, updateClient, themeConfig, isAccountingEnabled, addSession, user }) => {
+    anamnesisList: Anamnesis[];
+    saveAnamnesis: (a: Anamnesis) => void;
+}> = ({ clients, sessions, groups, transactions, updateClient, themeConfig, isAccountingEnabled, addSession, user, anamnesisList, saveAnamnesis }) => {
     const { id } = useParams<{id: string}>();
     const client = clients.find(c => c.id === id);
     const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'anamnesis' | 'files'>('overview');
-    const [anamnesis, setAnamnesis] = useState<Anamnesis | null>(null);
+    const [localAnamnesis, setLocalAnamnesis] = useState<Anamnesis>({
+        clientId: id || '',
+        presentingProblem: '', familyHistory: '', medicalHistory: '', 
+        educationHistory: '', socialHistory: '', traumaHistory: '',
+        updatedAt: Date.now()
+    });
 
-    // This state assumes Anamnesis is fetched from Supabase in App. Since we are refactoring, we'll mock fetch here or pass setter
-    // For simplicity, we assume anamnesis data is fetched in App and passed down or we use local state here initialized empty
-    // But since App controls data, we should probably fetch it.
-    // For this version, let's just use local state for the form, assuming it saves to App.
-    // But App doesn't have Anamnesis state in the provided snippet. I'll add it to App.
-    
+    useEffect(() => {
+        if (id) {
+            const found = anamnesisList.find(a => a.clientId === id);
+            if (found) setLocalAnamnesis(found);
+            else setLocalAnamnesis(prev => ({...prev, clientId: id}));
+        }
+    }, [id, anamnesisList]);
+
     if (!client) return <div className="text-center py-20">Danışan bulunamadı.</div>;
 
     const clientSessions = sessions.filter(s => s.clientId === client.id || (s.groupId && groups.find(g => g.id === s.groupId)?.clientIds.includes(client.id))).sort((a,b) => b.date - a.date);
@@ -1149,6 +1185,11 @@ const ClientProfilePageImpl: React.FC<{
         total: clientSessions.length,
         completed: clientSessions.filter(s => s.status === 'completed').length,
         cancelled: clientSessions.filter(s => s.status === 'cancelled').length
+    };
+
+    const handleSaveAnamnesis = () => {
+        saveAnamnesis({...localAnamnesis, updatedAt: Date.now()});
+        alert('Anamnez kaydedildi.');
     };
 
     return (
@@ -1160,7 +1201,7 @@ const ClientProfilePageImpl: React.FC<{
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <Card className="md:col-span-1 h-fit text-center">
-                      <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 ${themeConfig.primaryClass}`}>
+                      <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 overflow-hidden ${themeConfig.primaryClass}`}>
                           {client.name.substring(0, 2).toUpperCase()}
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white">{client.name}</h3>
@@ -1237,9 +1278,34 @@ const ClientProfilePageImpl: React.FC<{
                      )}
 
                      {activeTab === 'anamnesis' && (
-                         <div className="space-y-4">
-                             <p className="text-sm text-gray-500 italic">Bu alan yapım aşamasındadır (Veritabanı bağlantısı bekleniyor).</p>
-                             {/* Anamnesis form would go here */}
+                         <div className="space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 <div className="col-span-2">
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Başvuru Sebebi</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[80px]" value={localAnamnesis.presentingProblem || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, presentingProblem: e.target.value})} placeholder="Danışanın geliş sebebi..." />
+                                 </div>
+                                 <div>
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Aile Öyküsü</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[120px]" value={localAnamnesis.familyHistory || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, familyHistory: e.target.value})} placeholder="Aile yapısı, ilişkiler..." />
+                                 </div>
+                                 <div>
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tıbbi / Psikiyatrik Öykü</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[120px]" value={localAnamnesis.medicalHistory || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, medicalHistory: e.target.value})} placeholder="Hastalıklar, ilaçlar, eski tedaviler..." />
+                                 </div>
+                                 <div>
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Eğitim / İş Öyküsü</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[120px]" value={localAnamnesis.educationHistory || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, educationHistory: e.target.value})} placeholder="Okul, iş hayatı..." />
+                                 </div>
+                                 <div>
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Sosyal İlişkiler</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[120px]" value={localAnamnesis.socialHistory || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, socialHistory: e.target.value})} placeholder="Arkadaşlıklar, sosyal yaşam..." />
+                                 </div>
+                                 <div className="col-span-2">
+                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Travma Öyküsü</label>
+                                     <textarea className="w-full p-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white text-sm min-h-[80px]" value={localAnamnesis.traumaHistory || ''} onChange={e => setLocalAnamnesis({...localAnamnesis, traumaHistory: e.target.value})} placeholder="Önemli travmatik yaşantılar..." />
+                                 </div>
+                             </div>
+                             <Button onClick={handleSaveAnamnesis} activeTheme={themeConfig} className="w-full">Kaydet</Button>
                          </div>
                      )}
                      
@@ -1261,19 +1327,64 @@ const SettingsPageImpl: React.FC<{
     isAccountingEnabled: boolean; setIsAccountingEnabled: (v: boolean) => void;
     exportData: () => void; importData: () => void;
     updateProfile: (name: string) => void;
-}> = ({ user, themeConfig, setThemeConfig, colorMode, setColorMode, isAccountingEnabled, setIsAccountingEnabled, exportData, importData, updateProfile }) => {
+    uploadAvatar: (file: File) => void;
+    updatePassword: (pass: string) => void;
+}> = ({ user, themeConfig, setThemeConfig, colorMode, setColorMode, isAccountingEnabled, setIsAccountingEnabled, exportData, importData, updateProfile, uploadAvatar, updatePassword }) => {
     const [fullName, setFullName] = useState(user.fullName || '');
-    const [showPassword, setShowPassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
     
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        setUploading(true);
+        await uploadAvatar(e.target.files[0]);
+        setUploading(false);
+    };
+
+    const handlePasswordSubmit = () => {
+        if (newPassword.length < 6) return alert("Şifre en az 6 karakter olmalıdır.");
+        if (newPassword !== confirmPassword) return alert("Şifreler eşleşmiyor.");
+        updatePassword(newPassword);
+        setNewPassword(''); setConfirmPassword('');
+    };
+
     return (
         <div className="max-w-2xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out]">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Ayarlar</h2>
 
             <Card>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Profil</h3>
+                <div className="flex items-center gap-6 mb-6">
+                    <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white overflow-hidden ${themeConfig.primaryClass}`}>
+                             {user.avatar ? <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon size={32} />}
+                        </div>
+                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera size={24} className="text-white" />
+                        </div>
+                        {uploading && <div className="absolute inset-0 bg-white/50 rounded-full flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" /></div>}
+                    </div>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
+                    <div>
+                        <p className="font-bold text-gray-900 dark:text-white">Profil Fotoğrafı</p>
+                        <p className="text-xs text-gray-500">Değiştirmek için tıklayın</p>
+                    </div>
+                </div>
+
                 <div className="space-y-4">
                     <Input label="Ad Soyad" value={fullName} onChange={e => setFullName(e.target.value)} className="text-gray-900" />
                     <Button onClick={() => updateProfile(fullName)} activeTheme={themeConfig}>Güncelle</Button>
+                </div>
+            </Card>
+
+            <Card>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><Lock size={20} /> Güvenlik</h3>
+                <div className="space-y-4">
+                    <Input type="password" label="Yeni Şifre" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
+                    <Input type="password" label="Şifre Tekrar" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
+                    <Button onClick={handlePasswordSubmit} variant="secondary" activeTheme={themeConfig}>Şifreyi Değiştir</Button>
                 </div>
             </Card>
             
@@ -1479,8 +1590,6 @@ const AccountingPage: React.FC<{
   );
 };
 
-// --- Main App Component ---
-
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -1492,24 +1601,24 @@ const App: React.FC = () => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(THEMES[0]);
   const [colorMode, setColorMode] = useState<'light' | 'dark' | 'system'>('system');
   const [isAccountingEnabled, setIsAccountingEnabled] = useState(true);
+  const [anamnesisList, setAnamnesisList] = useState<Anamnesis[]>([]);
 
-  // Supabase Client - Hardcoded for simplicity as per previous instructions
   const [supabase] = useState(() => createClient(
-      'https://wesyhmkxxgybqndavjcy.supabase.co', 
-      'sb_publishable_KX0Jp67HyB07nLMOyrIpNg_0YTxPZaQ'
+      process.env.REACT_APP_SUPABASE_URL || 'https://wesyhmkxxgybqndavjcy.supabase.co', 
+      process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_KX0Jp67HyB07nLMOyrIpNg_0YTxPZaQ'
   ));
 
-  // --- Data Fetching ---
   const fetchData = async () => {
       if (!user) return;
       try {
-          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes] = await Promise.all([
+          const [clientsRes, groupsRes, sessionsRes, transactionsRes, expensesRes, settingsRes, anamnesisRes] = await Promise.all([
               supabase.from('clients').select('*'),
               supabase.from('groups').select('*'),
               supabase.from('sessions').select('*'),
               supabase.from('transactions').select('*'),
               supabase.from('expenses').select('*'),
-              supabase.from('user_settings').select('*').single()
+              supabase.from('user_settings').select('*').single(),
+              supabase.from('anamnesis').select('*')
           ]);
 
           if (clientsRes.data) {
@@ -1540,6 +1649,18 @@ const App: React.FC = () => {
                   id: e.id, amount: e.amount, date: e.date, description: e.description, category: e.category
               })));
           }
+          if (anamnesisRes.data) {
+              setAnamnesisList(anamnesisRes.data.map((a: any) => ({
+                  clientId: a.client_id,
+                  presentingProblem: a.presenting_problem,
+                  familyHistory: a.family_history,
+                  medicalHistory: a.medical_history,
+                  educationHistory: a.education_history,
+                  socialHistory: a.social_history,
+                  traumaHistory: a.trauma_history,
+                  updatedAt: a.updated_at
+              })));
+          }
           if (settingsRes.data) {
               if (settingsRes.data.theme) {
                   const savedTheme = THEMES.find(t => t.name === settingsRes.data.theme);
@@ -1548,6 +1669,7 @@ const App: React.FC = () => {
               if (settingsRes.data.dark_mode !== null) setColorMode(settingsRes.data.theme_mode || (settingsRes.data.dark_mode ? 'dark' : 'light'));
               if (settingsRes.data.accounting_enabled !== null) setIsAccountingEnabled(settingsRes.data.accounting_enabled);
               if (settingsRes.data.full_name) setUser(prev => prev ? {...prev, fullName: settingsRes.data.full_name} : null);
+              if (settingsRes.data.avatar) setUser(prev => prev ? {...prev, avatar: settingsRes.data.avatar} : null);
           }
       } catch (error) { console.error("Data fetch error:", error); }
   };
@@ -1559,7 +1681,8 @@ const App: React.FC = () => {
                  username: session.user.email || '', 
                  isAuthenticated: true, 
                  fullName: session.user.user_metadata?.full_name || 'Kullanıcı',
-                 avatar: session.user.user_metadata?.avatar_url
+                 avatar: session.user.user_metadata?.avatar_url,
+                 id: session.user.id
              });
           } else {
               setUser(null);
@@ -1572,7 +1695,8 @@ const App: React.FC = () => {
       if (user) fetchData();
   }, [user]);
 
-  // --- CRUD Operations (Sync with Supabase) ---
+  // ... CRUD operations (addSession, updateSession, etc.) - ensure to include saveAnamnesis, uploadAvatar, updatePassword
+
   const addSession = async (s: Session) => {
       setSessions(prev => [...prev, s]);
       await supabase.from('sessions').insert({
@@ -1595,8 +1719,6 @@ const App: React.FC = () => {
   const handleSessionCompletion = async (s: Session, note: string) => {
     const updated = { ...s, status: 'completed' as const, notes: note };
     updateSession(updated);
-    
-    // Auto-charge
     if (isAccountingEnabled) {
         if (s.type === 'individual' && s.clientId) {
             const client = clients.find(c => c.id === s.clientId);
@@ -1638,7 +1760,7 @@ const App: React.FC = () => {
       setTransactions(prev => prev.filter(t => t.id !== id));
       const client = clients.find(c => c.id === clientId);
       if (client) {
-          const change = type === 'payment' ? amount : -amount; // Reverse effect
+          const change = type === 'payment' ? amount : -amount;
           const newBalance = client.balance + change;
           setClients(prev => prev.map(c => c.id === clientId ? { ...c, balance: newBalance } : c));
           await supabase.from('transactions').delete().eq('id', id);
@@ -1715,14 +1837,40 @@ const App: React.FC = () => {
       if (uid) await supabase.from('user_settings').upsert({ user_id: uid, theme_mode: m });
   };
 
-  // Color Mode Effect
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('dark');
-    if (colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      root.classList.add('dark');
-    }
-  }, [colorMode]);
+  const saveAnamnesis = async (a: Anamnesis) => {
+      setAnamnesisList(prev => {
+          const idx = prev.findIndex(item => item.clientId === a.clientId);
+          if (idx >= 0) { const newArr = [...prev]; newArr[idx] = a; return newArr; }
+          return [...prev, a];
+      });
+      await supabase.from('anamnesis').upsert({
+          client_id: a.clientId, user_id: (await supabase.auth.getUser()).data.user?.id,
+          presenting_problem: a.presentingProblem, family_history: a.familyHistory, medical_history: a.medicalHistory,
+          education_history: a.educationHistory, social_history: a.socialHistory, trauma_history: a.traumaHistory,
+          updated_at: a.updatedAt
+      });
+  };
+
+  const uploadAvatar = async (file: File) => {
+      try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user!.id}-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+          const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+          if (uploadError) throw uploadError;
+          const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+          await supabase.auth.updateUser({ data: { avatar_url: data.publicUrl } });
+          setUser(prev => prev ? {...prev, avatar: data.publicUrl} : null);
+          await supabase.from('user_settings').upsert({ user_id: user!.id, avatar: data.publicUrl });
+          alert("Profil fotoğrafı güncellendi.");
+      } catch (e: any) { alert("Yükleme hatası: " + e.message); }
+  };
+
+  const updatePassword = async (password: string) => {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) alert("Hata: " + error.message);
+      else alert("Şifre başarıyla güncellendi.");
+  };
 
   const exportData = () => {
       const data = { clients, sessions, groups, transactions, expenses, settings: { theme: themeConfig.name, isAccountingEnabled } };
@@ -1769,13 +1917,23 @@ const App: React.FC = () => {
               <ClientsPageImpl clients={clients} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} themeConfig={themeConfig} />
           } />
           <Route path="/clients/:id" element={
-              <ClientProfilePageImpl clients={clients} sessions={sessions} groups={groups} transactions={transactions} updateClient={updateClient} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} addSession={addSession} user={user} />
+              <ClientProfilePageImpl 
+                  clients={clients} sessions={sessions} groups={groups} transactions={transactions} 
+                  updateClient={updateClient} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} 
+                  addSession={addSession} user={user} anamnesisList={anamnesisList} saveAnamnesis={saveAnamnesis}
+              />
           } />
           <Route path="/groups" element={
               <GroupsPageImpl groups={groups} clients={clients} addGroup={addGroup} updateGroup={updateGroup} deleteGroup={deleteGroup} themeConfig={themeConfig} sessions={sessions} />
           } />
           <Route path="/settings" element={
-              <SettingsPageImpl user={user} themeConfig={themeConfig} setThemeConfig={handleThemeChange} colorMode={colorMode} setColorMode={handleColorModeChange} isAccountingEnabled={isAccountingEnabled} setIsAccountingEnabled={setIsAccountingEnabled} exportData={exportData} importData={importData} updateProfile={updateProfile} />
+              <SettingsPageImpl 
+                  user={user} themeConfig={themeConfig} setThemeConfig={handleThemeChange} 
+                  colorMode={colorMode} setColorMode={handleColorModeChange} 
+                  isAccountingEnabled={isAccountingEnabled} setIsAccountingEnabled={setIsAccountingEnabled} 
+                  exportData={exportData} importData={importData} updateProfile={updateProfile}
+                  uploadAvatar={uploadAvatar} updatePassword={updatePassword}
+              />
           } />
         </Routes>
       </Layout>
