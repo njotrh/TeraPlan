@@ -169,10 +169,6 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
           <Input type="password" label="Şifre" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
           {error && <p className={`text-sm ml-2 font-medium ${error.includes('başarılı') ? 'text-green-600' : 'text-red-500'}`}>{error}</p>}
           
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-xs text-yellow-700 dark:text-yellow-400">
-             Supabase <strong>anon</strong> / <strong>public</strong> anahtarını kullandığınızdan emin olun. Gizli (service_role) anahtar tarayıcıda çalışmaz.
-          </div>
-
           <Button type="submit" className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Kayıt Ol' : 'Giriş Yap')}
           </Button>

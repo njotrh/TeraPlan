@@ -169,10 +169,6 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
           <Input type="password" label="Şifre" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
           {error && <p className={`text-sm ml-2 font-medium ${error.includes('başarılı') ? 'text-green-600' : 'text-red-500'}`}>{error}</p>}
           
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-xs text-yellow-700 dark:text-yellow-400">
-             Supabase <strong>anon</strong> / <strong>public</strong> anahtarını kullandığınızdan emin olun. Gizli (service_role) anahtar tarayıcıda çalışmaz.
-          </div>
-
           <Button type="submit" className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Kayıt Ol' : 'Giriş Yap')}
           </Button>
@@ -1311,4 +1307,948 @@ const ClientProfilePage: React.FC<{
                      </div>
                      <div className="space-y-1.5">
                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Aile Öyküsü</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.familyHistory} onChange={e => setAnamnesisForm({...anamnesisForm, familyHistory: e.target.value})} placeholder="Ebeveynler, kardeşler, aile içi ilişkiler..." />
+                     </div>
+                     <div className="space-y-1.5">
+                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tıbbi / Psikiyatrik Öykü</label>
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.medicalHistory} onChange={e => setAnamnesisForm({...anamnesisForm, medicalHistory: e.target.value})} placeholder="Geçmiş hastalıklar, kullanılan ilaçlar, önceki tedaviler..." />
+                     </div>
+                     <div className="space-y-1.5">
+                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Eğitim / İş Öyküsü</label>
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.educationHistory} onChange={e => setAnamnesisForm({...anamnesisForm, educationHistory: e.target.value})} placeholder="Okul hayatı, akademik başarı, iş geçmişi..." />
+                     </div>
+                     <div className="space-y-1.5">
+                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sosyal İlişkiler</label>
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.socialHistory} onChange={e => setAnamnesisForm({...anamnesisForm, socialHistory: e.target.value})} placeholder="Arkadaşlıklar, romantik ilişkiler, sosyal destek..." />
+                     </div>
+                     <div className="space-y-1.5">
+                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Travma Öyküsü</label>
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.traumaHistory} onChange={e => setAnamnesisForm({...anamnesisForm, traumaHistory: e.target.value})} placeholder="Kaza, kayıp, şiddet, istismar vb..." />
+                     </div>
+                 </div>
+             </Card>
+         )}
+
+         {activeTab === 'history' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold flex items-center gap-2 text-gray-900 dark:text-white"><History size={20} /> Seans Geçmişi</h3>
+                    <Button size="sm" variant="secondary" onClick={() => exportClientHistoryPDF(client, clientSessions)} icon={<Printer size={16} />}>PDF</Button>
+                </div>
+                <div className="space-y-3">
+                    {clientSessions.length > 0 ? clientSessions.map(s => (<div key={s.id} onClick={() => s.notes ? setViewNoteSession(s) : null} className={`flex justify-between items-center p-3 rounded-xl border border-transparent transition-all ${s.notes ? 'bg-blue-50 dark:bg-slate-800 hover:border-blue-200 cursor-pointer' : 'bg-gray-50 dark:bg-slate-800'}`}><div><p className="font-medium text-gray-900 dark:text-white">{formatDate(s.date)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{s.status === 'completed' ? 'Tamamlandı' : 'Planlandı'}</p></div>{s.notes && <div className="flex items-center gap-1 text-blue-500"><FileText size={16} /><span className="text-xs">Notu Gör</span></div>}</div>)) : <p className="text-sm text-gray-400">Henüz kayıt yok.</p>}
+                </div>
+                </Card>
+                <Card>
+                <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white"><Wallet size={20} /> Finansal Hareketler</h3>
+                <div className="space-y-3">
+                    {clientTransactions.length > 0 ? clientTransactions.map(t => (<div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-xl"><div><p className="font-medium text-gray-900 dark:text-white">{t.description}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><span className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-red-600'}`}>{t.type === 'payment' ? '+' : '-'}{formatCurrency(t.amount)}</span></div>)) : <p className="text-sm text-gray-400">Henüz işlem yok.</p>}
+                </div>
+                </Card>
+            </div>
+         )}
+
+         {activeTab === 'files' && (
+             <Card>
+                 <div className="flex justify-between items-center mb-6">
+                     <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Paperclip size={20} /> Dosyalar</h3>
+                     <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} icon={uploading ? <Loader2 className="animate-spin"/> : <Upload size={16} />}>
+                         {uploading ? 'Yükleniyor...' : 'Dosya Yükle'}
+                     </Button>
+                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                 </div>
+                 
+                 {clientDocuments.length > 0 ? (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {clientDocuments.map(doc => (
+                             <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-xl group border border-transparent hover:border-blue-200 dark:hover:border-blue-900">
+                                 <div className="flex items-center gap-3 overflow-hidden">
+                                     <div className="p-3 bg-white dark:bg-slate-700 rounded-lg text-blue-600"><File size={20} /></div>
+                                     <div className="overflow-hidden">
+                                         <a href={doc.url} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 dark:text-white truncate hover:underline block">{doc.name}</a>
+                                         <p className="text-xs text-gray-500">{formatDate(doc.createdAt)} • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
+                                     </div>
+                                 </div>
+                                 <button onClick={() => deleteDocument(doc.id, doc.name)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <Trash2 size={18} />
+                                 </button>
+                             </div>
+                         ))}
+                     </div>
+                 ) : (
+                     <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl">
+                         <File className="mx-auto text-gray-300 dark:text-slate-700 mb-2" size={48} />
+                         <p className="text-gray-500 dark:text-gray-400">Henüz dosya yüklenmemiş.</p>
+                     </div>
+                 )}
+             </Card>
+         )}
+
+         <Modal isOpen={!!viewNoteSession} onClose={() => setViewNoteSession(null)} title="Görüşme Detayı">
+             <div className="space-y-4">
+                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-800 pb-2"><span>{viewNoteSession && formatDate(viewNoteSession.date)}</span><span>{viewNoteSession?.durationMinutes} dk</span></div>
+                 <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl min-h-[150px] whitespace-pre-wrap text-gray-800 dark:text-gray-200">{viewNoteSession?.notes || 'Not bulunmuyor.'}</div>
+                 <div className="text-right text-xs text-gray-400">{viewNoteSession?.fee ? `Seans Ücreti: ${formatCurrency(viewNoteSession.fee)}` : ''}</div>
+                 <div className="flex gap-2">
+                     <Button variant="secondary" onClick={() => {
+                        try {
+                            const doc = new jsPDF();
+                            doc.text(`Tarih: ${formatDate(viewNoteSession!.date)}`, 14, 20);
+                            doc.text(`Danışan: ${client.name}`, 14, 30);
+                            const splitText = doc.splitTextToSize(viewNoteSession!.notes || '', 180);
+                            doc.text(splitText, 14, 40);
+                            doc.save('gorusme_notu.pdf');
+                        } catch (e:any) {
+                            alert("PDF oluşturulamadı: " + e.message);
+                        }
+                     }} icon={<Printer size={16} />}>PDF İndir</Button>
+                     <Button onClick={() => setViewNoteSession(null)} className="flex-1">Kapat</Button>
+                 </div>
+             </div>
+         </Modal>
+      </div>
+   );
+};
+
+const AccountingPage: React.FC<{
+  clients: Client[];
+  transactions: Transaction[];
+  expenses: Expense[];
+  addTransaction: (t: Transaction) => void;
+  deleteTransaction: (id: string, clientId: string, amount: number, type: 'charge' | 'payment') => void;
+  addExpense: (e: Expense) => void;
+  deleteExpense: (id: string) => void;
+  themeConfig: ThemeConfig;
+}> = ({ clients, transactions, expenses, addTransaction, deleteTransaction, addExpense, deleteExpense, themeConfig }) => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [newPayment, setNewPayment] = useState<{clientId: string, amount: string, description: string}>({ clientId: '', amount: '', description: 'Ödeme' });
+  const [newExpense, setNewExpense] = useState<{amount: string, description: string, category: string}>({ amount: '', description: '', category: 'Ofis' });
+  const [timeFilter, setTimeFilter] = useState<'day' | 'week' | 'month' | 'all'>('month');
+
+  const filterDate = (timestamp: number) => {
+      const date = new Date(timestamp);
+      const now = new Date();
+      if (timeFilter === 'all') return true;
+      if (timeFilter === 'day') return isSameDay(date, now);
+      if (timeFilter === 'week') {
+          const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+          startOfWeek.setHours(0,0,0,0);
+          return date >= startOfWeek;
+      }
+      if (timeFilter === 'month') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+      return true;
+  };
+
+  const filteredTransactions = transactions.filter(t => filterDate(t.date));
+  const filteredExpenses = expenses.filter(e => filterDate(e.date));
+
+  const totalRevenue = filteredTransactions.filter(t => t.type === 'charge').reduce((sum, t) => sum + t.amount, 0);
+  const totalCollected = filteredTransactions.filter(t => t.type === 'payment').reduce((sum, t) => sum + t.amount, 0);
+  const totalOutstanding = clients.reduce((sum, c) => sum + c.balance, 0);
+  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const netCash = totalCollected - totalExpenses;
+  const historyItems = [...filteredTransactions.map(t => ({ ...t, kind: 'transaction' as const })), ...filteredExpenses.map(e => ({ ...e, kind: 'expense' as const }))].sort((a, b) => b.date - a.date);
+
+  // Generate Monthly Income Data for Chart (Last 6 months)
+  const incomeData = [];
+  const incomeLabels = [];
+  for(let i=5; i>=0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const monthIncome = transactions
+          .filter(t => t.type === 'payment' && new Date(t.date).getMonth() === d.getMonth() && new Date(t.date).getFullYear() === d.getFullYear())
+          .reduce((sum, t) => sum + t.amount, 0);
+      incomeData.push(monthIncome);
+      incomeLabels.push(d.toLocaleDateString('tr-TR', {month: 'short'}));
+  }
+
+  const handleSavePayment = () => {
+    if (!newPayment.clientId || !newPayment.amount) return;
+    addTransaction({ id: generateId(), clientId: newPayment.clientId, amount: parseFloat(newPayment.amount), type: 'payment', date: Date.now(), description: newPayment.description });
+    setIsPaymentModalOpen(false); setNewPayment({ clientId: '', amount: '', description: 'Ödeme' });
+  };
+  const handleSaveExpense = () => {
+    if (!newExpense.amount || !newExpense.description) return;
+    addExpense({ id: generateId(), amount: parseFloat(newExpense.amount), date: Date.now(), description: newExpense.description, category: newExpense.category });
+    setIsExpenseModalOpen(false); setNewExpense({ amount: '', description: '', category: 'Ofis' });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div><h2 className="text-3xl font-bold text-gray-900 dark:text-white">Muhasebe</h2><p className="text-gray-500 dark:text-gray-400">Finansal durum, ödeme ve gider takibi</p></div>
+        <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsExpenseModalOpen(true)} activeTheme={themeConfig} icon={<TrendingDown size={20} />}>Gider Ekle</Button><Button onClick={() => setIsPaymentModalOpen(true)} activeTheme={themeConfig} icon={<Plus size={20} />}>Ödeme Al</Button></div>
+      </div>
+
+      {/* Time Filter Tabs */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-wrap p-1 bg-white dark:bg-slate-900 rounded-xl w-full sm:w-fit border border-gray-100 dark:border-slate-800">
+            {[ {id: 'day', label: 'Günlük'}, {id: 'week', label: 'Haftalık'}, {id: 'month', label: 'Aylık'}, {id: 'all', label: 'Tümü'} ].map(t => (
+                <button 
+                    key={t.id} 
+                    onClick={() => setTimeFilter(t.id as any)}
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeFilter === t.id ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                    {t.label}
+                </button>
+            ))}
+        </div>
+        <Button variant="ghost" onClick={() => exportAccountingPDF(filteredTransactions, filteredExpenses, clients)} icon={<Printer size={18}/>}>Rapor İndir (PDF)</Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="flex items-center justify-between bg-emerald-600 text-white border-none"><div><p className="text-emerald-100 text-sm font-medium">Toplam Ciro</p><p className="text-2xl font-bold mt-1">{formatCurrency(totalRevenue)}</p></div><div className="p-3 bg-white/20 rounded-full"><TrendingUp size={24} className="text-white" /></div></Card>
+        <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tahsil Edilen</p><p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(totalCollected)}</p></div><div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full"><Wallet size={24} className="text-blue-600 dark:text-blue-400" /></div></Card>
+        <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Toplam Gider</p><p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{formatCurrency(totalExpenses)}</p></div><div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-full"><TrendingDown size={24} className="text-red-600 dark:text-red-400" /></div></Card>
+        <Card className={`flex items-center justify-between ${netCash >= 0 ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'}`}><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Net Kasa</p><p className={`text-2xl font-bold mt-1 ${netCash >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{formatCurrency(netCash)}</p></div><div className={`p-3 rounded-full ${netCash >= 0 ? 'bg-green-200 dark:bg-green-800/40' : 'bg-red-200 dark:bg-red-800/40'}`}><Banknote size={24} className={netCash >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'} /></div></Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2">
+              <div className="flex items-center gap-2 mb-6">
+                  <BarChart className="text-blue-600" size={24} />
+                  <h3 className="font-bold text-gray-900 dark:text-white">Aylık Gelir Grafiği (Son 6 Ay)</h3>
+              </div>
+              <BarChartComponent data={incomeData} labels={incomeLabels} colorClass="bg-blue-500" height="h-48" />
+          </Card>
+          <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Danışanlardan Bekleyen Toplam Bakiye</p><p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(totalOutstanding)}</p></div></Card>
+      </div>
+
+      <Card>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
+        <div className="space-y-4 overflow-x-auto">
+          {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
+              if (item.kind === 'transaction') {
+                 const t = item as Transaction;
+                 const client = clients.find(c => c.id === t.clientId);
+                 return (
+                    <div key={t.id} className="min-w-[500px] flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                      <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
+                      <div className="flex items-center gap-4"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
+                    </div>
+                 );
+              } else {
+                 const e = item as Expense;
+                 return (
+                    <div key={e.id} className="min-w-[500px] flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                      <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
+                      <div className="flex items-center gap-4"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
+                    </div>
+                 );
+              }
+            })}
+        </div>
+      </Card>
+      <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Ödeme Al">
+        <div className="space-y-4">
+          <SearchableSelect label="Danışan" placeholder="Danışan Seçiniz" options={clients.map(c => ({ value: c.id, label: `${c.name} (Bakiye: ${formatCurrency(c.balance)})` }))} value={newPayment.clientId} onChange={val => setNewPayment({...newPayment, clientId: val})} />
+          <Input type="number" label="Tutar (TL)" placeholder="0.00" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} className="text-gray-900" />
+          <Input label="Açıklama" placeholder="Örn: Nakit Ödeme, Havale" value={newPayment.description} onChange={e => setNewPayment({...newPayment, description: e.target.value})} className="text-gray-900" />
+          <Button onClick={handleSavePayment} activeTheme={themeConfig} className="w-full mt-4">Ödemeyi Kaydet</Button>
+        </div>
+      </Modal>
+      <Modal isOpen={isExpenseModalOpen} onClose={() => setIsExpenseModalOpen(false)} title="Yeni Gider Ekle">
+         <div className="space-y-4">
+            <Input label="Açıklama" placeholder="Örn: Ofis Kirası, Elektrik Faturası" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className="text-gray-900" />
+            <Input type="number" label="Tutar (TL)" placeholder="0.00" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className="text-gray-900" />
+            <div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-2">Kategori</label><select className="px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-opacity-50 text-gray-900 dark:text-white w-full" value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})}><option value="Ofis">Ofis Giderleri</option><option value="Vergi">Vergi / Muhasebe</option><option value="Materyal">Terapi Materyalleri</option><option value="Eğitim">Eğitim / Süpervizyon</option><option value="Diğer">Diğer</option></select></div>
+            <Button onClick={handleSaveExpense} variant="danger" className="w-full mt-4">Gideri Kaydet</Button>
+         </div>
+      </Modal>
+    </div>
+  );
+};
+
+const SettingsPage: React.FC<{
+  user: User;
+  setUser: (u: User) => void;
+  themeConfig: ThemeConfig;
+  setThemeName: (name: string) => void;
+  colorMode: 'light' | 'dark' | 'system';
+  setColorMode: (mode: 'light' | 'dark' | 'system') => void;
+  isAccountingEnabled: boolean;
+  toggleAccounting: () => void;
+  supabase: SupabaseClient;
+  templates: NoteTemplate[];
+  addTemplate: (t: NoteTemplate) => void;
+  updateTemplate: (t: NoteTemplate) => void;
+  deleteTemplate: (id: string) => void;
+}> = ({ user, setUser, themeConfig, setThemeName, colorMode, setColorMode, isAccountingEnabled, toggleAccounting, supabase, templates, addTemplate, updateTemplate, deleteTemplate }) => {
+    const [tempUser, setTempUser] = useState(user);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [notification, setNotification] = useState('');
+    
+    // Password Change State
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Template Modal State
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState<NoteTemplate | null>(null);
+    const [templateForm, setTemplateForm] = useState<{label: string, content: string}>({label:'', content:''});
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => { setTempUser(prev => ({ ...prev, avatar: reader.result as string })); };
+            reader.readAsDataURL(file);
+        }
+    };
+    const handleSaveProfile = async () => {
+        setUser(tempUser);
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) {
+             setNotification('Hata: Oturum bilgisi bulunamadı.');
+             return;
+        }
+
+        let dbDarkMode: boolean | null = null;
+        if (colorMode === 'dark') dbDarkMode = true;
+        else if (colorMode === 'light') dbDarkMode = false;
+
+        const { error } = await supabase.from('user_settings').upsert({
+            user_id: u.id,
+            full_name: tempUser.fullName,
+            avatar: tempUser.avatar,
+            theme: localStorage.getItem('theme'),
+            dark_mode: dbDarkMode,
+            accounting_enabled: isAccountingEnabled
+        }, { onConflict: 'user_id' });
+
+        if (error) setNotification('Hata: Profil kaydedilemedi.'); else setNotification('Profil başarıyla güncellendi!');
+        setTimeout(() => setNotification(''), 3000);
+    };
+
+    const handlePasswordChange = async () => {
+        if (newPassword.length < 6) { setNotification('Hata: Şifre en az 6 karakter olmalıdır.'); return; }
+        if (newPassword !== confirmPassword) { setNotification('Hata: Şifreler eşleşmiyor.'); return; }
+        
+        const { error } = await (supabase.auth as any).updateUser({ password: newPassword });
+        
+        if (error) setNotification('Hata: ' + error.message);
+        else { 
+            setNotification('Şifre başarıyla değiştirildi.');
+            setNewPassword('');
+            setConfirmPassword('');
+        }
+        setTimeout(() => setNotification(''), 3000);
+    }
+
+    // Template Handlers
+    const openTemplateModal = (tpl?: NoteTemplate) => {
+        if (tpl) {
+            setSelectedTemplate(tpl);
+            setTemplateForm({label: tpl.label, content: tpl.content});
+        } else {
+            setSelectedTemplate(null);
+            setTemplateForm({label: '', content: ''});
+        }
+        setIsTemplateModalOpen(true);
+    }
+
+    const saveTemplate = () => {
+        if (!templateForm.label || !templateForm.content) return;
+        
+        if (selectedTemplate) {
+            updateTemplate({...selectedTemplate, label: templateForm.label, content: templateForm.content});
+        } else {
+            addTemplate({id: generateId(), label: templateForm.label, content: templateForm.content});
+        }
+        setIsTemplateModalOpen(false);
+    }
+
+    const loadDefaultTemplates = () => {
+        DEFAULT_NOTE_TEMPLATES.forEach(tpl => {
+            addTemplate({id: generateId(), label: tpl.label, content: tpl.content});
+        });
+        setNotification('Varsayılan şablonlar eklendi.');
+        setTimeout(() => setNotification(''), 3000);
+    }
+
+    return (
+        <div className="max-w-2xl mx-auto space-y-6 md:space-y-8 pb-24 md:pb-0 animate-[fadeIn_0.3s_ease-out]">
+            <div><h2 className="text-3xl font-bold text-gray-900 dark:text-white">Ayarlar</h2><p className="text-gray-500 dark:text-gray-400">Profil ve görünüm ayarlarını yönetin</p></div>
+            {notification && <div className={`p-4 rounded-xl flex items-center gap-2 animate-[fadeIn_0.2s_ease-out] ${notification.startsWith('Hata') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}><CheckCircle2 size={20} /> {notification}</div>}
+            
+            <Card className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-4"><UserIcon size={20} className={themeConfig.accentClass} /> Profil Ayarları</h3>
+                <div className="flex flex-col items-center gap-4">
+                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white overflow-hidden text-3xl ${themeConfig.primaryClass}`}>{tempUser.avatar ? <img src={tempUser.avatar} alt="Avatar" className="w-full h-full object-cover" /> : (tempUser.fullName || tempUser.username).substring(0,2).toUpperCase()}</div>
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera size={24} className="text-white" /></div>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Profil fotoğrafını değiştirmek için tıklayın</p>
+                </div>
+                <div className="space-y-4"><Input label="Ad Soyad" value={tempUser.fullName || ''} onChange={e => setTempUser({...tempUser, fullName: e.target.value})} className="text-gray-900" /><Button onClick={handleSaveProfile} activeTheme={themeConfig} className="w-full">Değişiklikleri Kaydet</Button></div>
+            </Card>
+
+            <Card className="space-y-6">
+                 <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-800 pb-4">
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><StickyNote size={20} className={themeConfig.accentClass} /> Not Şablonları</h3>
+                     <Button size="sm" onClick={() => openTemplateModal()} icon={<Plus size={16}/>}>Yeni Şablon</Button>
+                 </div>
+                 
+                 <div className="space-y-3">
+                     {templates.length > 0 ? templates.map(tpl => (
+                         <div key={tpl.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl group">
+                             <div className="font-medium text-gray-900 dark:text-white">{tpl.label}</div>
+                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <button onClick={() => openTemplateModal(tpl)} className="p-2 text-gray-400 hover:text-blue-500"><Edit size={16} /></button>
+                                 <button onClick={() => deleteTemplate(tpl.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                             </div>
+                         </div>
+                     )) : (
+                         <div className="text-center py-4 text-gray-500 text-sm">
+                             Henüz şablon yok. <button onClick={loadDefaultTemplates} className="text-blue-600 hover:underline">Varsayılanları Yükle</button>
+                         </div>
+                     )}
+                 </div>
+            </Card>
+
+            <Card className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-4"><Lock size={20} className={themeConfig.accentClass} /> Güvenlik</h3>
+                <div className="space-y-4">
+                    <Input type="password" label="Yeni Şifre" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="text-gray-900" placeholder="••••••" />
+                    <Input type="password" label="Yeni Şifre (Tekrar)" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="text-gray-900" placeholder="••••••" />
+                    <Button onClick={handlePasswordChange} variant="secondary" className="w-full">Şifreyi Güncelle</Button>
+                </div>
+            </Card>
+
+            <Card className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-4"><Settings size={20} className={themeConfig.accentClass} /> Sistem Ayarları</h3>
+                <div className="flex items-center justify-between"><div><p className="font-medium text-gray-900 dark:text-white">Muhasebe Modülü</p><p className="text-sm text-gray-500 dark:text-gray-400">Finansal takip, bakiye ve ücret özelliklerini aç/kapat</p></div><button onClick={toggleAccounting} className={`text-gray-400 hover:text-blue-500 transition-colors ${isAccountingEnabled ? 'text-blue-600 dark:text-blue-400' : ''}`}>{isAccountingEnabled ? <ToggleRight size={48} strokeWidth={1.5} /> : <ToggleLeft size={48} strokeWidth={1.5} />}</button></div>
+            </Card>
+            <Card className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-4"><Sun size={20} className={themeConfig.accentClass} /> Görünüm</h3>
+                
+                <div className="space-y-3">
+                    <p className="font-medium text-gray-700 dark:text-gray-300">Mod Seçimi</p>
+                    <div className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+                        <button 
+                            onClick={() => setColorMode('light')} 
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${colorMode === 'light' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'}`}
+                        >
+                            <Sun size={16} /> Aydınlık
+                        </button>
+                        <button 
+                            onClick={() => setColorMode('dark')} 
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${colorMode === 'dark' ? 'bg-slate-700 shadow text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'}`}
+                        >
+                            <Moon size={16} /> Karanlık
+                        </button>
+                        <button 
+                            onClick={() => setColorMode('system')} 
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${colorMode === 'system' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'}`}
+                        >
+                            <Laptop size={16} /> Sistem
+                        </button>
+                    </div>
+                </div>
+
+                <div><p className="font-medium text-gray-700 dark:text-gray-300 mb-3">Tema Rengi</p><div className="flex flex-wrap gap-3 justify-center sm:justify-start">{THEMES.map(t => (<button key={t.name} onClick={() => setThemeName(t.name)} className={`w-10 h-10 rounded-full transition-transform hover:scale-110 flex items-center justify-center ${t.primaryClass} ${themeConfig.name === t.name ? 'ring-4 ring-offset-2 ring-gray-300 dark:ring-slate-700' : ''}`} title={t.label}>{themeConfig.name === t.name && <CheckCircle2 size={16} className="text-white" />}</button>))}</div></div>
+            </Card>
+            <div className="text-center pb-8 opacity-40 hover:opacity-100 transition-opacity">
+               <p className="text-xs font-mono text-gray-400 dark:text-gray-600">TeraPlan v0.2</p>
+            </div>
+
+            <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} title={selectedTemplate ? "Şablonu Düzenle" : "Yeni Şablon"}>
+                <div className="space-y-4">
+                    <Input label="Şablon Adı" value={templateForm.label} onChange={e => setTemplateForm({...templateForm, label: e.target.value})} className="text-gray-900" placeholder="Örn: İlk Görüşme" />
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-2">İçerik</label>
+                        <textarea 
+                            className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-opacity-50 min-h-[200px] text-gray-900 dark:text-white resize-none" 
+                            value={templateForm.content} 
+                            onChange={e => setTemplateForm({...templateForm, content: e.target.value})} 
+                            placeholder="Şablon içeriğini buraya girin..." 
+                        />
+                    </div>
+                    <Button onClick={saveTemplate} className="w-full">Kaydet</Button>
+                </div>
+            </Modal>
+        </div>
+    );
+}
+
+const App: React.FC = () => {
+    // Hardcoded Supabase Credentials
+    const SUPABASE_URL = 'https://wesyhmkxxgybqndavjcy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_KX0Jp67HyB07nLMOyrIpNg_0YTxPZaQ';
+
+    const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [templates, setTemplates] = useState<NoteTemplate[]>([]);
+    const [anamnesisCache, setAnamnesisCache] = useState<Record<string, Anamnesis>>({});
+    const [themeName, setThemeName] = useState('ocean');
+    
+    // Color Mode State: 'light' | 'dark' | 'system'
+    const [colorMode, setColorMode] = useState<'light' | 'dark' | 'system'>(() => {
+        const stored = localStorage.getItem('colorMode');
+        return (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
+    });
+
+    const [isAccountingEnabled, setIsAccountingEnabled] = useState(true);
+
+    const themeConfig = THEMES.find(t => t.name === themeName) || THEMES[0];
+
+    useEffect(() => {
+        try {
+            const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+            setSupabase(sb);
+        } catch (e) {
+            console.error("Supabase init failed", e);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!supabase) return;
+
+        const fetchData = async (userId: string) => {
+            setIsLoading(true);
+            const { data: settings } = await supabase.from('user_settings').select('*').eq('user_id', userId).single();
+            if (settings) {
+                if (settings.theme) setThemeName(settings.theme);
+                if (settings.dark_mode === null) setColorMode('system');
+                else if (settings.dark_mode === true) setColorMode('dark');
+                else setColorMode('light');
+
+                if (settings.accounting_enabled !== null) setIsAccountingEnabled(settings.accounting_enabled);
+                setUser(prev => prev ? { ...prev, fullName: settings.full_name, avatar: settings.avatar } : null);
+            }
+            const { data: c } = await supabase.from('clients').select('*');
+            if(c) setClients(c.map((x:any) => ({
+                id: x.id, 
+                name: x.name, 
+                phone: x.phone, 
+                email: x.email, 
+                notes: x.notes, 
+                createdAt: x.created_at, 
+                defaultFee: parseFloat(x.default_fee), 
+                balance: parseFloat(x.balance),
+                isActive: x.is_active !== false
+            })));
+            const { data: g } = await supabase.from('groups').select('*');
+            if(g) setGroups(g.map((x:any) => ({
+                id: x.id, 
+                name: x.name, 
+                clientIds: x.client_ids || [], 
+                createdAt: x.created_at, 
+                defaultFee: parseFloat(x.default_fee),
+                isActive: x.is_active !== false
+            })));
+            const { data: s } = await supabase.from('sessions').select('*');
+            if(s) setSessions(s.map((x:any) => ({
+                id: x.id,
+                type: x.type,
+                clientId: x.client_id,
+                group_id: x.group_id,
+                groupId: x.group_id,
+                title: x.title,
+                date: x.date,
+                durationMinutes: x.duration_minutes,
+                status: x.status,
+                notes: x.notes,
+                fee: parseFloat(x.fee)
+            })));
+            const { data: t } = await supabase.from('transactions').select('*');
+            if(t) setTransactions(t.map((x:any) => ({
+                id: x.id,
+                clientId: x.client_id,
+                amount: parseFloat(x.amount),
+                type: x.type,
+                date: x.date,
+                description: x.description,
+                relatedSessionId: x.related_session_id
+            })));
+            const { data: e } = await supabase.from('expenses').select('*');
+            if(e) setExpenses(e.map((x:any) => ({
+                id: x.id,
+                amount: parseFloat(x.amount),
+                date: x.date,
+                description: x.description,
+                category: x.category
+            })));
+            const { data: d } = await supabase.from('documents').select('*');
+            if(d) setDocuments(d.map((x:any) => ({
+                id: x.id,
+                clientId: x.client_id,
+                name: x.name,
+                url: x.url,
+                type: x.type,
+                size: parseFloat(x.size),
+                createdAt: x.created_at
+            })));
+            const { data: tpl } = await supabase.from('note_templates').select('*');
+            if(tpl) setTemplates(tpl.map((x:any) => ({ id: x.id, label: x.label, content: x.content })));
+
+            // Fetch Anamnesis
+            const { data: ana } = await supabase.from('anamnesis').select('*');
+            if (ana) {
+                const cache: Record<string, Anamnesis> = {};
+                ana.forEach((a: any) => {
+                    cache[a.client_id] = {
+                        clientId: a.client_id,
+                        presentingProblem: a.presenting_problem || '',
+                        familyHistory: a.family_history || '',
+                        medicalHistory: a.medical_history || '',
+                        educationHistory: a.education_history || '',
+                        socialHistory: a.social_history || '',
+                        traumaHistory: a.trauma_history || '',
+                        updatedAt: a.updated_at
+                    };
+                });
+                setAnamnesisCache(cache);
+            }
+
+            setIsLoading(false);
+        };
+
+        (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
+            if (session?.user) {
+                setUser({ username: session.user.email || '', isAuthenticated: true });
+                fetchData(session.user.id);
+            }
+        });
+
+        const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
+            if (session?.user) {
+                setUser({ username: session.user.email || '', isAuthenticated: true });
+                fetchData(session.user.id);
+            } else {
+                setUser(null); setClients([]); setGroups([]); setSessions([]); setTransactions([]); setExpenses([]); setDocuments([]); setTemplates([]); setAnamnesisCache({});
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [supabase]);
+
+    useEffect(() => { document.documentElement.style.setProperty('--color-primary', themeConfig.primaryClass); }, [themeName, themeConfig]);
+    
+    // Apply Color Mode
+    useEffect(() => {
+        const root = document.documentElement;
+        localStorage.setItem('colorMode', colorMode);
+
+        if (colorMode === 'dark') {
+            root.classList.add('dark');
+        } else if (colorMode === 'light') {
+            root.classList.remove('dark');
+        } else {
+            // System
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mediaQuery.matches) root.classList.add('dark');
+            else root.classList.remove('dark');
+
+            const handler = (e: MediaQueryListEvent) => {
+                if (e.matches) root.classList.add('dark');
+                else root.classList.remove('dark');
+            };
+            mediaQuery.addEventListener('change', handler);
+            return () => mediaQuery.removeEventListener('change', handler);
+        }
+    }, [colorMode]);
+
+    // CRUD Ops
+    const addClient = async (client: Client) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        
+        const newClient = { 
+            id: client.id, 
+            user_id: u.id, 
+            name: client.name, 
+            phone: client.phone, 
+            email: client.email, 
+            notes: client.notes, 
+            created_at: client.createdAt, 
+            default_fee: client.defaultFee, 
+            balance: client.balance,
+            is_active: true
+        };
+        const { error } = await supabase.from('clients').insert(newClient);
+        if (!error) setClients([...clients, client]); else console.error(error);
+    };
+
+    const updateClient = async (updated: Client) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('clients').update({
+            name: updated.name,
+            phone: updated.phone,
+            email: updated.email,
+            default_fee: updated.defaultFee,
+            notes: updated.notes,
+            is_active: updated.isActive
+        }).eq('id', updated.id);
+
+        if(!error) setClients(clients.map(c => c.id === updated.id ? updated : c));
+    };
+
+    const toggleClientStatus = async (client: Client) => {
+        await updateClient({...client, isActive: !client.isActive});
+    }
+
+    const deleteClient = async (id: string) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('clients').delete().eq('id', id);
+        if (!error) { setClients(clients.filter(c => c.id !== id)); setGroups(groups.map(g => ({ ...g, clientIds: g.clientIds.filter(cid => cid !== id) }))); setSessions(sessions.filter(s => s.clientId !== id)); }
+    };
+
+    const addGroup = async (group: Group) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        const newGroup = { id: group.id, user_id: u.id, name: group.name, client_ids: group.clientIds, created_at: group.createdAt, default_fee: group.defaultFee, is_active: true };
+        const { error } = await supabase.from('groups').insert(newGroup);
+        if (!error) setGroups([...groups, group]); else console.error(error);
+    };
+    
+    const updateGroup = async (updated: Group) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('groups').update({
+            name: updated.name,
+            client_ids: updated.clientIds,
+            is_active: updated.isActive
+        }).eq('id', updated.id);
+        if(!error) setGroups(groups.map(g => g.id === updated.id ? updated : g));
+    };
+
+    const toggleGroupStatus = async (group: Group) => {
+        await updateGroup({...group, isActive: !group.isActive});
+    };
+
+    const deleteGroup = async (id: string) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('groups').delete().eq('id', id);
+        if(!error) { setGroups(groups.filter(g => g.id !== id)); setSessions(sessions.filter(s => s.groupId !== id)); }
+    };
+    const addSession = async (session: Session) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        const newSession = { id: session.id, user_id: u.id, type: session.type, client_id: session.clientId, group_id: session.groupId, title: session.title, date: session.date, duration_minutes: session.durationMinutes, status: session.status, fee: session.fee };
+        const { error } = await supabase.from('sessions').insert(newSession);
+        if(!error) setSessions(prev => [...prev, session]); else console.error(error);
+    };
+    const updateSession = async (updated: Session) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('sessions').update({ status: updated.status, notes: updated.notes, fee: updated.fee }).eq('id', updated.id);
+        if(!error) setSessions(sessions.map(s => s.id === updated.id ? updated : s));
+    };
+    const deleteSession = async (id: string) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('sessions').delete().eq('id', id);
+        if(!error) setSessions(sessions.filter(s => s.id !== id));
+    };
+    const addTransaction = async (transaction: Transaction) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        const newTx = { id: transaction.id, user_id: u.id, client_id: transaction.clientId, amount: transaction.amount, type: transaction.type, date: transaction.date, description: transaction.description, related_session_id: transaction.relatedSessionId };
+        const { error } = await supabase.from('transactions').insert(newTx);
+        if(!error) {
+            setTransactions([...transactions, transaction]);
+            const client = clients.find(c => c.id === transaction.clientId);
+            if(client) {
+                const change = transaction.type === 'charge' ? transaction.amount : -transaction.amount;
+                const newBalance = (client.balance || 0) + change;
+                await supabase.from('clients').update({ balance: newBalance }).eq('id', client.id);
+                setClients(clients.map(c => c.id === client.id ? { ...c, balance: newBalance } : c));
+            }
+        } else console.error(error);
+    };
+    const deleteTransaction = async (id: string, clientId: string, amount: number, type: 'charge' | 'payment') => {
+        if (!supabase) return;
+        const { error } = await supabase.from('transactions').delete().eq('id', id);
+        if (!error) {
+            setTransactions(transactions.filter(t => t.id !== id));
+            const client = clients.find(c => c.id === clientId);
+            if(client) {
+                const change = type === 'charge' ? -amount : amount; // Reverse the effect
+                const newBalance = (client.balance || 0) + change;
+                await supabase.from('clients').update({ balance: newBalance }).eq('id', client.id);
+                setClients(clients.map(c => c.id === client.id ? { ...c, balance: newBalance } : c));
+            }
+        }
+    };
+    const addExpense = async (expense: Expense) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        const newExp = { id: expense.id, user_id: u.id, amount: expense.amount, date: expense.date, description: expense.description, category: expense.category };
+        const { error } = await supabase.from('expenses').insert(newExp);
+        if(!error) setExpenses([...expenses, expense]); else console.error(error);
+    };
+    const deleteExpense = async (id: string) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('expenses').delete().eq('id', id);
+        if(!error) setExpenses(expenses.filter(e => e.id !== id));
+    };
+
+    const uploadDocument = async (file: File, clientId: string) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+
+        try {
+            const fileName = `${u.id}/${generateId()}-${file.name}`;
+            const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file);
+            
+            if (uploadError) {
+                if (uploadError.message.includes("bucket not found")) {
+                    alert("Hata: Supabase panelinde 'documents' adında bir public bucket oluşturmalısınız.");
+                } else {
+                    alert("Dosya yükleme hatası: " + uploadError.message);
+                }
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName);
+
+            const newDoc = {
+                id: generateId(),
+                user_id: u.id,
+                client_id: clientId,
+                name: file.name,
+                url: publicUrl,
+                type: file.type,
+                size: file.size,
+                created_at: Date.now()
+            };
+
+            const { error: dbError } = await supabase.from('documents').insert(newDoc);
+            
+            if (!dbError) {
+                setDocuments([...documents, { ...newDoc, clientId: clientId, size: newDoc.size, createdAt: newDoc.created_at } as any]);
+            }
+        } catch (e) {
+            console.error("Upload process failed", e);
+        }
+    };
+
+    const deleteDocument = async (id: string, fileName: string) => {
+        if (!supabase) return;
+        // In a real app we'd also delete from storage, but for simplicity just DB row here
+        const { error } = await supabase.from('documents').delete().eq('id', id);
+        if(!error) setDocuments(documents.filter(d => d.id !== id));
+    };
+
+    const addTemplate = async (template: NoteTemplate) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        const { error } = await supabase.from('note_templates').insert({
+            id: template.id,
+            user_id: u.id,
+            label: template.label,
+            content: template.content,
+            created_at: Date.now()
+        });
+        if(!error) setTemplates([...templates, template]);
+    }
+
+    const updateTemplate = async (template: NoteTemplate) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('note_templates').update({
+            label: template.label,
+            content: template.content
+        }).eq('id', template.id);
+        if(!error) setTemplates(templates.map(t => t.id === template.id ? template : t));
+    }
+
+    const deleteTemplate = async (id: string) => {
+        if (!supabase) return;
+        const { error } = await supabase.from('note_templates').delete().eq('id', id);
+        if(!error) setTemplates(templates.filter(t => t.id !== id));
+    }
+
+    const saveAnamnesis = async (anamnesis: Anamnesis) => {
+        if (!supabase) return;
+        const { data: { user: u } } = await (supabase.auth as any).getUser();
+        if (!u) return;
+        
+        const payload = {
+            client_id: anamnesis.clientId,
+            user_id: u.id,
+            presenting_problem: anamnesis.presentingProblem,
+            family_history: anamnesis.familyHistory,
+            medical_history: anamnesis.medicalHistory,
+            education_history: anamnesis.educationHistory,
+            social_history: anamnesis.socialHistory,
+            trauma_history: anamnesis.traumaHistory,
+            updated_at: Date.now()
+        };
+
+        const { error } = await supabase.from('anamnesis').upsert(payload, { onConflict: 'client_id' });
+        
+        if (!error) {
+            setAnamnesisCache(prev => ({...prev, [anamnesis.clientId]: anamnesis}));
+            alert('Anamnez formu kaydedildi.');
+        } else {
+            console.error(error);
+            if (error.code === 'PGRST204' || error.message.includes('anamnesis')) {
+                alert('Hata: "anamnesis" tablosu bulunamadı. Lütfen SQL Editor\'den tabloyu oluşturun.');
+            } else {
+                alert('Kaydedilirken hata oluştu: ' + error.message);
+            }
+        }
+    }
+
+    const getAnamnesis = (clientId: string) => {
+        return anamnesisCache[clientId];
+    }
+
+    const handleSessionCompletion = async (session: Session, note: string) => {
+        let finalFee = session.fee || 0;
+        if (finalFee === 0) {
+            if (session.type === 'individual' && session.clientId) {
+                const c = clients.find(cl => cl.id === session.clientId); if (c && c.defaultFee) finalFee = c.defaultFee;
+            } else if (session.type === 'group' && session.groupId) {
+                const g = groups.find(gr => gr.id === session.groupId); if (g && g.defaultFee) finalFee = g.defaultFee;
+            }
+        }
+        const updatedSession = { ...session, status: 'completed' as const, notes: note, fee: finalFee };
+        await updateSession(updatedSession);
+        if (isAccountingEnabled && finalFee > 0) {
+            if (session.type === 'individual' && session.clientId) {
+                await addTransaction({ id: generateId(), clientId: session.clientId, amount: finalFee, type: 'charge', date: Date.now(), description: `Görüşme Ücreti - ${formatDate(session.date)}`, relatedSessionId: session.id });
+            } else if (session.type === 'group' && session.groupId) {
+                const group = groups.find(g => g.id === session.groupId);
+                if (group) { for (const clientId of group.clientIds) { await addTransaction({ id: generateId(), clientId: clientId, amount: finalFee, type: 'charge', date: Date.now(), description: `Grup Terapisi - ${group.name} - ${formatDate(session.date)}`, relatedSessionId: session.id }); } }
+            }
+        }
+    };
+
+    if (!supabase) return <div className="min-h-screen flex items-center justify-center dark:bg-slate-950 dark:text-white">Bağlanıyor...</div>;
+    if (!user || !user.isAuthenticated) return <Auth supabase={supabase} />;
+    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950"><div className="text-center"><Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-4" /><p className="text-gray-500">Veriler yükleniyor...</p></div></div>;
+
+    return (
+        <MemoryRouter>
+        <Layout user={user} onLogout={async () => { await (supabase.auth as any).signOut(); setUser(null); }} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled}>
+            <Routes>
+            <Route path="/" element={<HomePage clients={clients} sessions={sessions} groups={groups} themeConfig={themeConfig} updateSession={updateSession} addSession={addSession} handleSessionCompletion={handleSessionCompletion} deleteSession={deleteSession} user={user} isAccountingEnabled={isAccountingEnabled} templates={templates} />} />
+            <Route path="/calendar" element={<CalendarPage sessions={sessions} clients={clients} groups={groups} addSession={addSession} updateSession={updateSession} deleteSession={deleteSession} handleSessionCompletion={handleSessionCompletion} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} templates={templates} />} />
+            <Route path="/clients" element={<ClientsPage clients={clients} sessions={sessions} groups={groups} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} toggleClientStatus={toggleClientStatus} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} />} />
+            <Route path="/clients/:id" element={<ClientProfilePage clients={clients} sessions={sessions} groups={groups} transactions={transactions} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} documents={documents} uploadDocument={uploadDocument} deleteDocument={deleteDocument} saveAnamnesis={saveAnamnesis} getAnamnesis={getAnamnesis} />} />
+            <Route path="/groups" element={<GroupsPage groups={groups} clients={clients} sessions={sessions} addGroup={addGroup} updateGroup={updateGroup} deleteGroup={deleteGroup} toggleGroupStatus={toggleGroupStatus} themeConfig={themeConfig} isAccountingEnabled={isAccountingEnabled} />} />
+            <Route path="/accounting" element={isAccountingEnabled ? (<AccountingPage clients={clients} transactions={transactions} expenses={expenses} addTransaction={addTransaction} deleteTransaction={deleteTransaction} addExpense={addExpense} deleteExpense={deleteExpense} themeConfig={themeConfig} />) : <Navigate to="/" />} />
+            <Route path="/settings" element={<SettingsPage user={user} setUser={setUser} themeConfig={themeConfig} setThemeName={(name) => { setThemeName(name); (supabase.auth as any).getUser().then(({data}:any) => { if(data?.user) supabase.from('user_settings').upsert({ user_id: data.user.id, theme: name }, { onConflict: 'user_id' }).then(); }); }} colorMode={colorMode} setColorMode={setColorMode} isAccountingEnabled={isAccountingEnabled} toggleAccounting={() => setIsAccountingEnabled(!isAccountingEnabled)} supabase={supabase} templates={templates} addTemplate={addTemplate} updateTemplate={updateTemplate} deleteTemplate={deleteTemplate} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </Layout>
+        </MemoryRouter>
+    );
+};
+
+export default App;
