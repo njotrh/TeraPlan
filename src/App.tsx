@@ -103,6 +103,21 @@ const useParams = <T extends Record<string, string | undefined>>() => {
   return {} as T;
 };
 
+// --- Branding Component ---
+const TeraPlanLogo: React.FC<{className?: string}> = ({ className = "w-12 h-12" }) => (
+  <svg viewBox="0 0 400 200" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    {/* The 't' shape */}
+    <path d="M50 0 V60 H10 V100 H50 V150 C50 180 70 200 110 200 V160 C90 160 90 150 90 140 V100 H130 V60 H90 V0 H50 Z" />
+    {/* The square dot */}
+    <rect x="140" y="140" width="60" height="60" />
+    
+    {/* Text: tera. */}
+    <text x="220" y="90" fontSize="50" fontWeight="bold" fontFamily="sans-serif">tera.</text>
+    {/* Text: PLANNER */}
+    <text x="220" y="140" fontSize="36" fontWeight="normal" fontFamily="sans-serif" letterSpacing="2">PLANNER</text>
+  </svg>
+);
+
 // --- Connection Config (Hardcoded, skipped) ---
 const ConnectionConfig: React.FC<{ onConnect: (url: string, key: string) => void }> = ({ onConnect }) => null;
 
@@ -143,11 +158,9 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 p-4">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800">
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white">
-            <Calendar size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">TeraPlan</h1>
+        <div className="text-center mb-10 flex flex-col items-center">
+          {/* Custom Logo Replacement */}
+          <TeraPlanLogo className="w-48 h-24 text-gray-900 dark:text-white mb-4" />
           <p className="text-gray-500 dark:text-gray-400">Danışan Yönetim Sistemi</p>
         </div>
         
@@ -156,6 +169,10 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
           <Input type="password" label="Şifre" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
           {error && <p className={`text-sm ml-2 font-medium ${error.includes('başarılı') ? 'text-green-600' : 'text-red-500'}`}>{error}</p>}
           
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-xs text-yellow-700 dark:text-yellow-400">
+             Supabase <strong>anon</strong> / <strong>public</strong> anahtarını kullandığınızdan emin olun. Gizli (service_role) anahtar tarayıcıda çalışmaz.
+          </div>
+
           <Button type="submit" className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Kayıt Ol' : 'Giriş Yap')}
           </Button>
@@ -1294,85 +1311,4 @@ const ClientProfilePage: React.FC<{
                      </div>
                      <div className="space-y-1.5">
                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Aile Öyküsü</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.familyHistory} onChange={e => setAnamnesisForm({...anamnesisForm, familyHistory: e.target.value})} placeholder="Ebeveynler, kardeşler, aile içi ilişkiler..." />
-                     </div>
-                     <div className="space-y-1.5">
-                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tıbbi / Psikiyatrik Öykü</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.medicalHistory} onChange={e => setAnamnesisForm({...anamnesisForm, medicalHistory: e.target.value})} placeholder="Geçmiş hastalıklar, kullanılan ilaçlar, önceki tedaviler..." />
-                     </div>
-                     <div className="space-y-1.5">
-                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Eğitim / İş Öyküsü</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.educationHistory} onChange={e => setAnamnesisForm({...anamnesisForm, educationHistory: e.target.value})} placeholder="Okul hayatı, akademik başarı, iş geçmişi..." />
-                     </div>
-                     <div className="space-y-1.5">
-                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sosyal İlişkiler</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.socialHistory} onChange={e => setAnamnesisForm({...anamnesisForm, socialHistory: e.target.value})} placeholder="Arkadaşlıklar, romantik ilişkiler, sosyal destek..." />
-                     </div>
-                     <div className="space-y-1.5">
-                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Travma Öyküsü</label>
-                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px]" value={anamnesisForm.traumaHistory} onChange={e => setAnamnesisForm({...anamnesisForm, traumaHistory: e.target.value})} placeholder="Kaza, kayıp, şiddet, istismar vb..." />
-                     </div>
-                 </div>
-             </Card>
-         )}
-
-         {activeTab === 'history' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold flex items-center gap-2 text-gray-900 dark:text-white"><History size={20} /> Seans Geçmişi</h3>
-                    <Button size="sm" variant="secondary" onClick={() => exportClientHistoryPDF(client, clientSessions)} icon={<Printer size={16} />}>PDF</Button>
-                </div>
-                <div className="space-y-3">
-                    {clientSessions.length > 0 ? clientSessions.map(s => (<div key={s.id} onClick={() => s.notes ? setViewNoteSession(s) : null} className={`flex justify-between items-center p-3 rounded-xl border border-transparent transition-all ${s.notes ? 'bg-blue-50 dark:bg-slate-800 hover:border-blue-200 cursor-pointer' : 'bg-gray-50 dark:bg-slate-800'}`}><div><p className="font-medium text-gray-900 dark:text-white">{formatDate(s.date)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{s.status === 'completed' ? 'Tamamlandı' : 'Planlandı'}</p></div>{s.notes && <div className="flex items-center gap-1 text-blue-500"><FileText size={16} /><span className="text-xs">Notu Gör</span></div>}</div>)) : <p className="text-sm text-gray-400">Henüz kayıt yok.</p>}
-                </div>
-                </Card>
-                <Card>
-                <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white"><Wallet size={20} /> Finansal Hareketler</h3>
-                <div className="space-y-3">
-                    {clientTransactions.length > 0 ? clientTransactions.map(t => (<div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-xl"><div><p className="font-medium text-gray-900 dark:text-white">{t.description}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><span className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-red-600'}`}>{t.type === 'payment' ? '+' : '-'}{formatCurrency(t.amount)}</span></div>)) : <p className="text-sm text-gray-400">Henüz işlem yok.</p>}
-                </div>
-                </Card>
-            </div>
-         )}
-
-         {activeTab === 'files' && (
-             <Card>
-                 <div className="flex justify-between items-center mb-6">
-                     <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Paperclip size={20} /> Dosyalar</h3>
-                     <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} icon={uploading ? <Loader2 className="animate-spin"/> : <Upload size={16} />}>
-                         {uploading ? 'Yükleniyor...' : 'Dosya Yükle'}
-                     </Button>
-                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                 </div>
-                 
-                 {clientDocuments.length > 0 ? (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {clientDocuments.map(doc => (
-                             <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-xl group border border-transparent hover:border-blue-200 dark:hover:border-blue-900">
-                                 <div className="flex items-center gap-3 overflow-hidden">
-                                     <div className="p-3 bg-white dark:bg-slate-700 rounded-lg text-blue-600"><File size={20} /></div>
-                                     <div className="overflow-hidden">
-                                         <a href={doc.url} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 dark:text-white truncate hover:underline block">{doc.name}</a>
-                                         <p className="text-xs text-gray-500">{formatDate(doc.createdAt)} • {(doc.size / 1024 / 1024).toFixed(2)} MB</p>
-                                     </div>
-                                 </div>
-                                 <button onClick={() => deleteDocument(doc.id, doc.name)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <Trash2 size={18} />
-                                 </button>
-                             </div>
-                         ))}
-                     </div>
-                 ) : (
-                     <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl">
-                         <File className="mx-auto text-gray-300 dark:text-slate-700 mb-2" size={48} />
-                         <p className="text-gray-500 dark:text-gray-400">Henüz dosya yüklenmemiş.</p>
-                     </div>
-                 )}
-             </Card>
-         )}
-
-         <Modal isOpen={!!viewNoteSession} onClose={() => setViewNoteSession(null)} title="Görüşme Detayı">
-             <div className="space-y-4">
-                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-800 pb-2"><span>{viewNoteSession && formatDate(viewNoteSession.date)}</span><span>{viewNoteSession?.durationMinutes} dk</span></div>
-                 <div className="p-4 bg-gray-50 dark:bg-slate-800
+                         <textarea className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-none outline-none text-gray-900 dark:text-white resize-none min-h-[100px

@@ -103,6 +103,21 @@ const useParams = <T extends Record<string, string | undefined>>() => {
   return {} as T;
 };
 
+// --- Branding Component ---
+const TeraPlanLogo: React.FC<{className?: string}> = ({ className = "w-12 h-12" }) => (
+  <svg viewBox="0 0 400 200" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    {/* The 't' shape */}
+    <path d="M50 0 V60 H10 V100 H50 V150 C50 180 70 200 110 200 V160 C90 160 90 150 90 140 V100 H130 V60 H90 V0 H50 Z" />
+    {/* The square dot */}
+    <rect x="140" y="140" width="60" height="60" />
+    
+    {/* Text: tera. */}
+    <text x="220" y="90" fontSize="50" fontWeight="bold" fontFamily="sans-serif">tera.</text>
+    {/* Text: PLANNER */}
+    <text x="220" y="140" fontSize="36" fontWeight="normal" fontFamily="sans-serif" letterSpacing="2">PLANNER</text>
+  </svg>
+);
+
 // --- Connection Config (Hardcoded, skipped) ---
 const ConnectionConfig: React.FC<{ onConnect: (url: string, key: string) => void }> = ({ onConnect }) => null;
 
@@ -143,11 +158,9 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 p-4">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800">
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white">
-            <Calendar size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">TeraPlan</h1>
+        <div className="text-center mb-10 flex flex-col items-center">
+          {/* Custom Logo Replacement */}
+          <TeraPlanLogo className="w-48 h-24 text-gray-900 dark:text-white mb-4" />
           <p className="text-gray-500 dark:text-gray-400">Danışan Yönetim Sistemi</p>
         </div>
         
@@ -156,6 +169,10 @@ const Auth: React.FC<{ supabase: SupabaseClient }> = ({ supabase }) => {
           <Input type="password" label="Şifre" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" className="text-gray-900" />
           {error && <p className={`text-sm ml-2 font-medium ${error.includes('başarılı') ? 'text-green-600' : 'text-red-500'}`}>{error}</p>}
           
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-xs text-yellow-700 dark:text-yellow-400">
+             Supabase <strong>anon</strong> / <strong>public</strong> anahtarını kullandığınızdan emin olun. Gizli (service_role) anahtar tarayıcıda çalışmaz.
+          </div>
+
           <Button type="submit" className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Kayıt Ol' : 'Giriş Yap')}
           </Button>
