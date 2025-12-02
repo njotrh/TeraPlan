@@ -254,6 +254,61 @@ const BarChartComponent: React.FC<{data: number[], labels: string[], colorClass:
     )
 }
 
+const LineChartComponent: React.FC<{data: number[], labels: string[], color?: string, height?: string}> = ({ data, labels, color = "#2563eb", height = "200" }) => {
+    if (data.length === 0) return <div className="h-full flex items-center justify-center text-gray-400">Veri yok</div>;
+    
+    const max = Math.max(...data, 100); // Default to at least 100 if empty
+    const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * 100;
+        const y = 100 - (val / max) * 100;
+        return `${x},${y}`;
+    }).join(' ');
+
+    const fillPoints = `0,100 ${points} 100,100`;
+
+    return (
+        <div className="w-full relative" style={{ height: height }}>
+            <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                {/* Gradient Fill */}
+                <defs>
+                    <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+                <polygon points={fillPoints} fill="url(#chartGradient)" />
+                
+                {/* Line */}
+                <polyline 
+                    fill="none" 
+                    stroke={color} 
+                    strokeWidth="2" 
+                    points={points} 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                />
+
+                {/* Dots */}
+                {data.map((val, i) => {
+                     const x = (i / (data.length - 1)) * 100;
+                     const y = 100 - (val / max) * 100;
+                     return (
+                        <g key={i} className="group">
+                            <circle cx={x} cy={y} r="1.5" fill="white" stroke={color} strokeWidth="1" />
+                            {/* Tooltip on Hover */}
+                            <rect x={x - 10} y={y - 15} width="20" height="10" rx="2" fill="currentColor" className="text-gray-800 dark:text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <text x={x} y={y - 8} fontSize="4" textAnchor="middle" fill="white" className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold">{formatCurrency(val)}</text>
+                        </g>
+                     )
+                })}
+            </svg>
+            <div className="flex justify-between mt-2 px-1">
+                {labels.map((l, i) => <span key={i} className="text-xs text-gray-400">{l}</span>)}
+            </div>
+        </div>
+    );
+}
+
 // --- PDF Generators ---
 const normalizeForPDF = (str: string) => {
   const map: Record<string, string> = {
@@ -1654,7 +1709,7 @@ const AccountingPage: React.FC<{
                   <BarChart className="text-blue-600" size={24} />
                   <h3 className="font-bold text-gray-900 dark:text-white">Aylık Gelir Grafiği (Son 6 Ay)</h3>
               </div>
-              <BarChartComponent data={incomeData} labels={incomeLabels} colorClass="bg-blue-600 dark:bg-blue-500" height="h-64" textColor="text-gray-500 dark:text-gray-400" />
+              <LineChartComponent data={incomeData} labels={incomeLabels} color="#3b82f6" height="200px" />
           </Card>
           <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Danışanlardan Bekleyen Toplam Bakiye</p><p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(totalOutstanding)}</p></div></Card>
       </div>
