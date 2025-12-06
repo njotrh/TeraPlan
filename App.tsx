@@ -106,17 +106,21 @@ const useParams = <T extends Record<string, string | undefined>>() => {
 };
 
 // --- Branding Component ---
-const TeraPlanLogo: React.FC<{className?: string}> = ({ className = "w-12 h-12" }) => (
-  <svg viewBox="0 0 400 200" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+const TeraPlanLogo: React.FC<{className?: string; variant?: 'full' | 'icon'}> = ({ className = "w-12 h-12", variant = 'full' }) => (
+  <svg viewBox={variant === 'icon' ? "0 0 200 200" : "0 0 400 200"} className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
     {/* The 't' shape */}
     <path d="M50 0 V60 H10 V100 H50 V150 C50 180 70 200 110 200 V160 C90 160 90 150 90 140 V100 H130 V60 H90 V0 H50 Z" />
     {/* The square dot */}
     <rect x="140" y="140" width="60" height="60" />
     
-    {/* Text: tera. */}
-    <text x="220" y="90" fontSize="50" fontWeight="bold" fontFamily="sans-serif">tera.</text>
-    {/* Text: PLANNER */}
-    <text x="220" y="140" fontSize="36" fontWeight="normal" fontFamily="sans-serif" letterSpacing="2">PLANNER</text>
+    {variant === 'full' && (
+        <>
+            {/* Text: tera. */}
+            <text x="220" y="90" fontSize="50" fontWeight="bold" fontFamily="sans-serif">tera.</text>
+            {/* Text: PLANNER */}
+            <text x="220" y="140" fontSize="36" fontWeight="normal" fontFamily="sans-serif" letterSpacing="2">PLANNER</text>
+        </>
+    )}
   </svg>
 );
 
@@ -265,44 +269,6 @@ const BarChartComponent: React.FC<{data: number[], labels: string[], colorClass:
     )
 }
 
-const LineChartComponent: React.FC<{data: number[], labels: string[], color?: string}> = ({ data, labels, color = '#2563eb' }) => {
-  const height = 200;
-  const width = 600;
-  const max = Math.max(...data, 1);
-  const points = data.map((val, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - (val / max) * height * 0.8 - 20;
-    return `${x},${y}`;
-  }).join(' ');
-  
-  return (
-     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48 overflow-visible">
-        <defs>
-            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-                <stop offset="100%" stopColor={color} stopOpacity="0" />
-            </linearGradient>
-        </defs>
-        <polyline fill="url(#chartGradient)" stroke="none" points={`${0},${height} ${points} ${width},${height}`} />
-        <polyline fill="none" stroke={color} strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" />
-        {data.map((val, i) => {
-             const x = (i / (data.length - 1)) * width;
-             const y = height - (val / max) * height * 0.8 - 20;
-             return (
-                 <g key={i} className="group">
-                     <circle cx={x} cy={y} r="4" fill="white" stroke={color} strokeWidth="3" />
-                     <g className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <rect x={x - 20} y={y - 35} width="40" height="25" rx="4" fill="#1e293b" />
-                         <text x={x} y={y - 18} textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">{val}</text>
-                     </g>
-                     <text x={x} y={height} dy="15" textAnchor="middle" fill="currentColor" className="text-gray-500 text-[10px]">{labels[i]}</text>
-                 </g>
-             )
-        })}
-     </svg>
-  );
-}
-
 // --- PDF Generators ---
 const normalizeForPDF = (str: string) => {
   const map: Record<string, string> = {
@@ -347,7 +313,7 @@ const exportAccountingPDF = (transactions: Transaction[], expenses: Expense[], c
         
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(normalizeForPDF(`Tarih: ${formatDate(Date.now())}`), 14, 28);
+        doc.text(`Tarih: ${normalizeForPDF(new Date().toLocaleDateString('tr-TR'))}`, 14, 28);
         doc.text("TeraPlan Otomatik Rapor", 14, 34);
 
         const tableData = [
@@ -400,7 +366,7 @@ const exportClientHistoryPDF = (client: Client, sessions: Session[]) => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text(`Telefon: ${client.phone}`, 14, 28);
-        doc.text(normalizeForPDF(`Olusturulma: ${formatDate(Date.now())}`), 14, 34);
+        doc.text(`Olusturulma: ${normalizeForPDF(new Date().toLocaleDateString('tr-TR'))}`, 14, 34);
 
         const tableData = sessions.map(s => [
             normalizeForPDF(formatDate(s.date)),
@@ -442,7 +408,7 @@ const exportGroupHistoryPDF = (group: Group, sessions: Session[]) => {
         
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(normalizeForPDF(`Olusturulma: ${formatDate(Date.now())}`), 14, 28);
+        doc.text(`Olusturulma: ${normalizeForPDF(new Date().toLocaleDateString('tr-TR'))}`, 14, 28);
 
         const tableData = sessions.map(s => [
             normalizeForPDF(formatDate(s.date)),
@@ -616,7 +582,7 @@ const HomePage: React.FC<{
                         {session.status !== 'completed' && (
                            <>
                             <Button size="sm" variant="ghost" onClick={() => { setSelectedSession(session); setIsCompleteModalOpen(true); }} title="Tamamla">
-                                <CheckCircle2 size={20} className="text-green-600" />
+                                <CheckCircle2 size={20} className="text-green-600 text-gray-700" />
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => { setSelectedSession(session); setIsDeleteModalOpen(true); }} title="Sil">
                                 <Trash2 size={20} className="text-red-500" />
@@ -666,10 +632,6 @@ const HomePage: React.FC<{
     </div>
   );
 };
-
-// ... (CalendarPage, ClientsPageImpl, GroupsPageImpl, SettingsPageImpl same as before)
-// I will include them here but for brevity, I assume the user knows I'm updating App.tsx. 
-// However, the instructions say "Full content of file". I must include EVERYTHING.
 
 const CalendarPage: React.FC<{ 
   sessions: Session[]; clients: Client[]; groups: Group[]; 
@@ -787,7 +749,7 @@ const CalendarPage: React.FC<{
         </div>
       </div>
 
-      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-40 fixed lg:static bottom-[80px] lg:bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[85px]'} lg:h-full`}>
+      <div className={`w-full lg:w-96 bg-white dark:bg-slate-900 lg:rounded-[2rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] lg:shadow-xl border-t lg:border-l border-gray-100 dark:border-slate-800 flex flex-col z-40 fixed lg:static bottom-[80px] md:bottom-0 lg:bottom-0 left-0 right-0 rounded-t-[2rem] transition-all duration-300 ${isPanelExpanded ? 'h-[80vh]' : 'h-[85px]'} lg:h-full`}>
          <div 
             className="p-2 flex justify-center lg:hidden cursor-pointer active:bg-gray-50 dark:active:bg-slate-800 rounded-t-[2rem]"
             onClick={() => setIsPanelExpanded(!isPanelExpanded)}
@@ -923,7 +885,6 @@ const CalendarPage: React.FC<{
 const ClientsPageImpl: React.FC<{ 
     clients: Client[]; addClient: (c: Client) => void; updateClient: (c: Client) => void; deleteClient: (id: string) => void; themeConfig: ThemeConfig; 
 }> = ({ clients, addClient, updateClient, deleteClient, themeConfig }) => {
-    // ... ClientsPageImpl content
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const [search, setSearch] = useState('');
@@ -1424,7 +1385,6 @@ const SettingsPageImpl: React.FC<{
     deleteTemplate: (id: string) => void;
     onLogout: () => void;
 }> = ({ user, themeConfig, setThemeConfig, colorMode, setColorMode, isAccountingEnabled, setIsAccountingEnabled, exportData, importData, updateProfile, uploadAvatar, updatePassword, templates, saveTemplate, deleteTemplate, onLogout }) => {
-    // ... SettingsPageImpl same content
     const [fullName, setFullName] = useState(user.fullName || '');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -1582,7 +1542,6 @@ const SettingsPageImpl: React.FC<{
     );
 };
 
-
 const AccountingPage: React.FC<{
   clients: Client[];
   transactions: Transaction[];
@@ -1647,7 +1606,7 @@ const AccountingPage: React.FC<{
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out] w-full overflow-hidden">
+    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.3s_ease-out]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div><h2 className="text-3xl font-bold text-gray-900 dark:text-white">Muhasebe</h2><p className="text-gray-500 dark:text-gray-400">Finansal durum, ödeme ve gider takibi</p></div>
         <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsExpenseModalOpen(true)} activeTheme={themeConfig} icon={<TrendingDown size={20} />}>Gider Ekle</Button><Button onClick={() => setIsPaymentModalOpen(true)} activeTheme={themeConfig} icon={<Plus size={20} />}>Ödeme Al</Button></div>
@@ -1681,42 +1640,34 @@ const AccountingPage: React.FC<{
                   <BarChart className="text-blue-600" size={24} />
                   <h3 className="font-bold text-gray-900 dark:text-white">Aylık Gelir Grafiği (Son 6 Ay)</h3>
               </div>
-              <LineChartComponent data={incomeData} labels={incomeLabels} color="#2563eb" />
+              <BarChartComponent data={incomeData} labels={incomeLabels} colorClass="bg-blue-500" height="h-48" textColor="text-gray-500 dark:text-gray-400" />
           </Card>
           <Card className="flex items-center justify-between"><div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Danışanlardan Bekleyen Toplam Bakiye</p><p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(totalOutstanding)}</p></div></Card>
       </div>
 
       <Card>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"><History size={20} className={themeConfig.accentClass} /> Son İşlemler & Giderler</h3>
-        <div className="pb-2">
-          <div className="space-y-4">
+        <div className="space-y-4 overflow-x-auto">
           {historyItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz işlem veya gider kaydı bulunmuyor.</p> : historyItems.map((item) => {
               if (item.kind === 'transaction') {
                  const t = item as Transaction;
                  const client = clients.find(c => c.id === t.clientId);
                  return (
-                    <div key={t.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                      <div className="flex items-center gap-4"><div className={`p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div><h4 className="font-bold text-gray-900 dark:text-white">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{t.description}</p></div></div>
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                          <div className="text-right ml-auto sm:ml-0"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div>
-                          <button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button>
-                      </div>
+                    <div key={t.id} className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl group hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                      <div className="flex items-center gap-4 w-full md:w-auto"><div className={`shrink-0 p-3 rounded-full ${t.type === 'payment' ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600'}`}>{t.type === 'payment' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}</div><div className="min-w-0 flex-1"><h4 className="font-bold text-gray-900 dark:text-white truncate">{client?.name || 'Bilinmeyen Danışan'}</h4><p className="text-sm text-gray-500 dark:text-gray-400 truncate">{t.description}</p></div></div>
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end"><div className="text-right"><p className={`font-bold ${t.type === 'payment' ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}>{t.type === 'payment' ? '+' : ''}{formatCurrency(t.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(t.date)}</p></div><button onClick={() => deleteTransaction(t.id, t.clientId, t.amount, t.type)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 md:opacity-0 group-hover:opacity-100 transition-all" title="İşlemi Sil"><Trash2 size={16} /></button></div>
                     </div>
                  );
               } else {
                  const e = item as Expense;
                  return (
-                    <div key={e.id} className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
-                      <div className="flex items-center gap-4"><div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div><h4 className="font-bold text-gray-900 dark:text-white">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400">{e.category}</p></div></div>
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                          <div className="text-right ml-auto sm:ml-0"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div>
-                          <button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button>
-                      </div>
+                    <div key={e.id} className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 group hover:border-red-200 dark:hover:border-red-800 transition-colors">
+                      <div className="flex items-center gap-4 w-full md:w-auto"><div className="shrink-0 p-3 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600"><TrendingDown size={20} /></div><div className="min-w-0 flex-1"><h4 className="font-bold text-gray-900 dark:text-white truncate">{e.description}</h4><p className="text-sm text-gray-500 dark:text-gray-400 truncate">{e.category}</p></div></div>
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end"><div className="text-right"><p className="font-bold text-red-600">-{formatCurrency(e.amount)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(e.date)}</p></div><button onClick={() => deleteExpense(e.id)} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 md:opacity-0 group-hover:opacity-100 transition-all" title="Gideri Sil"><Trash2 size={16} /></button></div>
                     </div>
                  );
               }
             })}
-          </div>
         </div>
       </Card>
       <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Ödeme Al">
@@ -1752,6 +1703,7 @@ const App: React.FC = () => {
   const [isAccountingEnabled, setIsAccountingEnabled] = useState(true);
   const [anamnesisList, setAnamnesisList] = useState<Anamnesis[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [supabase] = useState(() => createClient(
       process.env.REACT_APP_SUPABASE_URL || 'https://wesyhmkxxgybqndavjcy.supabase.co', 
@@ -1843,9 +1795,15 @@ const App: React.FC = () => {
               if (settingsRes.data.avatar) setUser(prev => prev ? {...prev, avatar: settingsRes.data.avatar} : null);
           }
       } catch (error) { console.error("Data fetch error:", error); }
+      finally { setIsLoading(false); }
   };
 
   useEffect(() => {
+      // Initialize check
+      supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) setIsLoading(false);
+      });
+
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (session?.user) {
              setUser({ 
@@ -1857,6 +1815,7 @@ const App: React.FC = () => {
              });
           } else {
               setUser(null);
+              setIsLoading(false);
           }
       });
       return () => subscription.unsubscribe();
@@ -2014,8 +1973,8 @@ const App: React.FC = () => {
       });
       await supabase.from('anamnesis').upsert({
           client_id: a.clientId, user_id: (await supabase.auth.getUser()).data.user?.id,
-          presenting_problem: a.presentingProblem, family_history: a.familyHistory, medical_history: a.medicalHistory,
-          education_history: a.educationHistory, social_history: a.socialHistory, trauma_history: a.traumaHistory,
+          presenting_problem: a.presentingProblem, family_history: a.family_history, medical_history: a.medical_history,
+          education_history: a.education_history, social_history: a.social_history, trauma_history: a.trauma_history,
           updated_at: a.updatedAt
       });
   };
@@ -2116,6 +2075,15 @@ const App: React.FC = () => {
   };
 
   const importData = () => alert("İçe aktarma özelliği şu an sadece manuel SQL ile mümkündür.");
+
+  if (isLoading) {
+      return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-950 transition-colors">
+              <TeraPlanLogo className="w-24 h-24 text-blue-600 animate-spin" variant="icon" />
+              <p className="mt-8 text-gray-500 dark:text-gray-400 animate-pulse font-medium">Yükleniyor...</p>
+          </div>
+      );
+  }
 
   if (!user) {
       return <Auth supabase={supabase} />;
